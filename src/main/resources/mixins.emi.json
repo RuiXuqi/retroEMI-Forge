@@ -18,7 +18,8 @@
     "early.forge.FluidMixin",
     "early.minecraft.item.ItemMixin",
     "early.minecraft.item.ItemStackMixin",
-    "early.minecraft.packet.NetServerHandlerMixin"
+    "early.minecraft.packet.NetServerHandlerMixin",
+    "late.nei.LayoutStyleMinecraftMixin"
   ],
   "client": [
     "accessor.GuiContainerAccessor",

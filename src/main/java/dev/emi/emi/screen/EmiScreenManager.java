@@ -10,9 +10,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.rewindmc.retroemi.RetroEMI;
+import dev.emi.emi.nemi.NemiPlugin;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL11;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -128,6 +128,9 @@ public class EmiScreenManager {
 	public static SizedButtonWidget tree = new SizedButtonWidget(0, 0, 20, 20, 184, 0,
 			() -> true, (w) -> EmiApi.viewRecipeTree(),
 			com.rewindmc.retroemi.shim.java.List.of(EmiPort.translatable("tooltip.emi.recipe_tree")));
+    public static SizedButtonWidget nemi = new SizedButtonWidget(0, 0, 20, 20, 184, 0,
+			() -> true, (w) -> NemiPlugin.cycleNemi(),
+			com.rewindmc.retroemi.shim.java.List.of(EmiPort.translatable("tooltip.emi.nemi")));
 
 	public static boolean isDisabled() {
 		return !EmiReloadManager.isLoaded() || !EmiConfig.enabled;
@@ -532,6 +535,9 @@ public class EmiScreenManager {
 		if (tree.visible) {
 			x = Math.max(4, 4 + 22 + 22);
 		}
+        if (nemi.visible) {
+			x = Math.max(4, 4 + 22 * 3);
+		}
 		return x;
 	}
 
@@ -621,6 +627,7 @@ public class EmiScreenManager {
 		boolean visible = !isDisabled();
 		emi.visible = EmiConfig.emiConfigButtonVisibility.resolve(visible);
 		tree.visible = EmiConfig.recipeTreeButtonVisibility.resolve(visible);
+        nemi.visible = EmiConfig.emiConfigButtonVisibility.resolve(visible);
 		for (SidebarPanel panel : panels) {
 			panel.updateWidgetVisibility();
 		}
@@ -684,6 +691,7 @@ public class EmiScreenManager {
 		context.matrices().translate(0, 0, 100);
 		emi.render(context.raw(), mouseX, mouseY, delta);
 		tree.render(context.raw(), mouseX, mouseY, delta);
+        nemi.render(context.raw(), mouseX, mouseY, delta);
 		search.render(context.raw(), mouseX, mouseY, delta);
 		context.pop();
 	}
@@ -936,6 +944,9 @@ public class EmiScreenManager {
 		tree.x = 24;
 		tree.y = screen.height - 22;
 
+        nemi.x = 46;
+        nemi.y = screen.height - 22;
+
 		updateSidebarButtons();
 	}
 
@@ -987,6 +998,8 @@ public class EmiScreenManager {
 		} else if (emi.mouseClicked(mouseX, mouseY, button)) {
 			return true;
 		} else if (tree.mouseClicked(mouseX, mouseY, button)) {
+			return true;
+		} else if (nemi.mouseClicked(mouseX, mouseY, button)) {
 			return true;
 		}
 		for (SidebarPanel panel : panels) {

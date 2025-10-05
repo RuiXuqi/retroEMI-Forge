@@ -2,16 +2,8 @@ package dev.emi.emi.mixin.early.minecraft.client;
 
 import com.rewindmc.retroemi.REMIMixinHooks;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.settings.GameSettings;
-import net.minecraft.util.ResourceLocation;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.minecraft.text.Style;
-
-import java.util.Random;
 
 @Mixin(value = FontRenderer.class, priority = 2000)
 public abstract class FontRendererMixin {

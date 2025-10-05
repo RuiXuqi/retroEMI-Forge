@@ -4,7 +4,6 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 import net.minecraftforge.fluids.Fluid;
-import org.lwjgl.opengl.GL11;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;

@@ -3,9 +3,9 @@ package dev.emi.emi.platform.forge;
 import com.rewindmc.retroemi.PacketReader;
 import com.rewindmc.retroemi.RetroEMI;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
-import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -14,10 +14,10 @@ import dev.emi.emi.EmiPort;
 import dev.emi.emi.data.EmiData;
 import dev.emi.emi.data.EmiResourceReloadListener;
 import dev.emi.emi.mixin.accessor.PlayerControllerMPAccessor;
+import dev.emi.emi.nemi.NemiPlugin;
 import dev.emi.emi.network.*;
 import dev.emi.emi.platform.EmiClient;
 import dev.emi.emi.platform.EmiMain;
-import dev.emi.emi.registry.EmiCommands;
 import dev.emi.emi.runtime.EmiLog;
 import dev.emi.emi.runtime.EmiReloadManager;
 import net.minecraft.client.Minecraft;
@@ -53,6 +53,9 @@ public class EmiForge {
         });
         MinecraftForge.EVENT_BUS.register(this);
         FMLCommonHandler.instance().bus().register(this);
+
+        if (Loader.isModLoaded("NotEnoughItems"))
+            NemiPlugin.onLoad();
     }
 
     @Mod.EventHandler

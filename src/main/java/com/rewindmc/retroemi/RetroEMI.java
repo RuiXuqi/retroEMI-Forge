@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import cpw.mods.fml.common.registry.GameData;
+import dev.emi.emi.screen.EmiScreenBase;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import org.lwjgl.input.Keyboard;
@@ -319,14 +321,9 @@ public class RetroEMI {
     }
 
     public static List<Item> getAllItems() {
-        List<Item> itemList = new ArrayList<>();
-        RegistryNamespaced itemRegistry = Item.itemRegistry;
-        for (Object o : itemRegistry) {
-            if (o instanceof Item) {
-                itemList.add((Item) o);
-            }
-        }
-        return itemList;
+        List<Item> items = new ArrayList<>();
+        ((Iterable<Item>) GameData.getItemRegistry()).forEach(items::add);
+        return items;
     }
 
     public static int getScaledHeight(Minecraft client) {

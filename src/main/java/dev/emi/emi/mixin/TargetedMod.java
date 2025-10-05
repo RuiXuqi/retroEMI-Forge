@@ -2,7 +2,9 @@ package dev.emi.emi.mixin;
 
 public enum TargetedMod {
 
-    VANILLA("Minecraft", null);
+    VANILLA("Minecraft", null),
+    FORGE("Minecraft Forge", "net.minecraftforge.common.MinecraftForge"),
+    NEI("NotEnoughItems", "codechicken.nei.NEIModContainer");
 
     /** The "name" in the @Mod annotation */
     public final String modName;

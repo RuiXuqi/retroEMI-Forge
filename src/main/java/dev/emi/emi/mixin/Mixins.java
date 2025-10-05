@@ -15,30 +15,34 @@ public enum Mixins {
         .setApplyIf(() -> true)
         .addTargetedMod(TargetedMod.VANILLA)
         .addMixinClasses(addPrefix("minecraft.",
-            "block.BlockMixin",
-            "client.CraftingManagerMixin",
             "client.FontRendererMixin",
             "client.GuiContainerCreativeMixin",
             "client.GuiContainerMixin",
             "client.GuiScreenMixin",
-            "client.GuiTextFieldMixin",
-            "client.InventoryCraftingMixin",
-            "recipe.IRecipeMixin",
-            "item.ItemMixin",
-            "item.ItemStackMixin",
-            "client.MinecraftMixin",
-            "server.MinecraftServerMixin",
-            "packet.NetClientHandlerMixin",
-            "packet.NetServerHandlerMixin",
-            "server.PlayerControllerMPMixin",
+            "client.InventoryEffectRendererMixin",
             "client.RenderBlockMixin",
             "client.ResourceLocationMixin",
-            "server.ServerConfigurationManagerMixin",
-            "recipe.ShapedRecipesMixin",
-            "recipe.ShapelessRecipesMixin",
             "client.SlotCraftingMixin",
-            "client.SlotMixin",
-            "world.WorldMixin"
+            "item.ItemMixin",
+            "item.ItemStackMixin",
+            "packet.NetClientHandlerMixin",
+            "packet.NetServerHandlerMixin"
+        ))
+    ),
+    Forge(new Builder("Forge")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)
+        .addTargetedMod(TargetedMod.FORGE)
+        .addMixinClasses(addPrefix("forge.",
+            "FluidMixin"
+        ))
+    ),
+    NEI(new Builder("NEI")
+        .setPhase(Phase.LATE)
+        .setApplyIf(() -> true)
+        .addTargetedMod(TargetedMod.NEI)
+        .addMixinClasses(addPrefix("nei.",
+            "LayoutManagerMixin"
         ))
     );
 
