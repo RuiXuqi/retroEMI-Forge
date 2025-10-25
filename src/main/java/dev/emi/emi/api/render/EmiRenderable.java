@@ -7,5 +7,5 @@ import net.minecraft.client.gui.DrawContext;
  */
 public interface EmiRenderable {
 
-	void render(DrawContext draw, int x, int y, float delta);
+    void render(DrawContext draw, int x, int y, float delta);
 }

@@ -1,19 +1,17 @@
 package dev.emi.emi.data;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
 import dev.emi.emi.runtime.EmiLog;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Collection;
+import java.util.List;
 
 public class EmiDataLoader<T> {
     private static final Gson GSON = new Gson();

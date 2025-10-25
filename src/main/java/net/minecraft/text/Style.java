@@ -1,7 +1,7 @@
 package net.minecraft.text;
 
-import net.minecraft.event.ClickEvent;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.text.event.ClickEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
@@ -25,7 +25,7 @@ public class Style {
     }
 
     public Style withColor(int color) {
-        return Objects.equals(this.formats, String.valueOf(color)) ? this : with(new Style(formats + "§x" + (Integer.toHexString(color|0xFF000000).substring(2).replace("", "§")) + "x", underline, this.clickEvent), this.formats, String.valueOf(color));
+        return Objects.equals(this.formats, String.valueOf(color)) ? this : with(new Style(formats + "§x" + (Integer.toHexString(color | 0xFF000000).substring(2).replace("", "§")) + "x", underline, this.clickEvent), this.formats, String.valueOf(color));
     }
 
     public Style withFormatting(Formatting formatting) {

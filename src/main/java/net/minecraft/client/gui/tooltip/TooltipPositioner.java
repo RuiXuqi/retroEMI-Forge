@@ -4,5 +4,5 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.util.math.Vec2i;
 
 public interface TooltipPositioner {
-	public Vec2i getPosition(GuiScreen screen, int x, int y, int w, int h);
+    public Vec2i getPosition(GuiScreen screen, int x, int y, int w, int h);
 }

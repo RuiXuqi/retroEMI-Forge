@@ -2,31 +2,27 @@ package dev.emi.emi.mixin.early.minecraft.packet;
 
 import com.rewindmc.retroemi.PacketReader;
 import dev.emi.emi.network.EmiPacket;
-import dev.emi.emi.platform.EmiClient;
-import dev.emi.emi.runtime.EmiLog;
-import dev.emi.emi.runtime.EmiReloadManager;
+import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetHandlerPlayClient;
-import net.minecraft.network.play.server.S3FPacketCustomPayload;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.play.server.SPacketCustomPayload;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.minecraft.network.PacketByteBuf;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.util.function.Function;
 
 @Mixin(NetHandlerPlayClient.class)
 public class NetClientHandlerMixin {
 
     @Inject(method = "handleCustomPayload", at = @At("HEAD"))
-    public void handleCustomPayload(S3FPacketCustomPayload packetIn, CallbackInfo ci) {
-        Function<PacketByteBuf, EmiPacket> reader = PacketReader.clientReaders.get(packetIn.func_149169_c());
+    public void handleCustomPayload(SPacketCustomPayload packetIn, CallbackInfo ci) {
+        Function<PacketBuffer, EmiPacket> reader = PacketReader.clientReaders.get(packetIn.getChannelName());
         if (reader != null) {
-            var epkt = reader.apply(PacketByteBuf.in(new DataInputStream(new ByteArrayInputStream(packetIn.func_149168_d()))));
-            epkt.apply(Minecraft.getMinecraft().thePlayer);
+            var epkt = reader.apply(new PacketBuffer(Unpooled.wrappedBuffer(packetIn.getBufferData())));
+            epkt.apply(Minecraft.getMinecraft().player);
         }
     }
 }

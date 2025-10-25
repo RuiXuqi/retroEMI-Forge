@@ -4,15 +4,14 @@ import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.emi.emi.EmiPort;
 import dev.emi.emi.EmiRenderHelper;
+import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.runtime.EmiDrawContext;
 import dev.emi.emi.screen.EmiScreenManager;
-import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ResourceLocation;
 
@@ -112,18 +111,18 @@ class ChessEmiStack extends EmiStack {
         if (piece != null) {
             List<TooltipComponent> list = Lists.newArrayList();
             list.add(TooltipComponent.of(EmiPort.ordered(
-                EmiPort.translatable("emi.chess.piece." + piece.color().toString().toLowerCase() + "_" + piece.type().toString().toLowerCase()))));
+                    EmiPort.translatable("emi.chess.piece." + piece.color().toString().toLowerCase() + "_" + piece.type().toString().toLowerCase()))));
             Minecraft client = Minecraft.getMinecraft();
             if (!EmiChess.get().started) {
                 if (piece.type() == PieceType.KING) {
                     list.add(new ChessTooltipComponent(ChessPiece.of(PieceType.PAWN, PieceColor.BLACK), ChessPiece.of(PieceType.KING, PieceColor.BLACK),
-                        EmiPort.translatable("emi.chess.tooltip.invite")));
+                            EmiPort.translatable("emi.chess.tooltip.invite")));
                     if (EmiChess.get().pending != null) {
-                        EntityPlayer player = client.theWorld.getPlayerEntityByName(EmiChess.get().pending);
+                        EntityPlayer player = client.world.getPlayerEntityByName(EmiChess.get().pending);
                         if (player != null) {
                             list.add(new ChessTooltipComponent(ChessPiece.of(PieceType.KING, PieceColor.WHITE), ChessPiece.of(PieceType.KING, PieceColor.BLACK),
-                                EmiPort.translatable("emi.chess.tooltip.accept", player.getCommandSenderName())));
-                            list.add(TooltipComponent.of(EmiPort.ordered(EmiPort.translatable("emi.chess.tooltip.decline", player.getCommandSenderName()))));
+                                    EmiPort.translatable("emi.chess.tooltip.accept", player.getDisplayNameString())));
+                            list.add(TooltipComponent.of(EmiPort.ordered(EmiPort.translatable("emi.chess.tooltip.decline", player.getDisplayNameString()))));
                         }
                     }
                 }

@@ -4,11 +4,7 @@ import dev.emi.emi.EmiPort;
 import dev.emi.emi.api.recipe.EmiCraftingRecipe;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
-import dev.emi.emi.mixin.accessor.ShapedOreRecipeAccessor;
-import dev.emi.emi.mixin.accessor.ShapedRecipesAccessor;
-import dev.emi.emi.mixin.accessor.ShapelessRecipesAccessor;
 import net.minecraft.block.Block;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.ShapedRecipes;
 import net.minecraft.item.crafting.ShapelessRecipes;
@@ -24,21 +20,21 @@ public class SyntheticIdentifier {
 
     public static ResourceLocation generateId(Object o) {
         if (o == null) {
-            return EmiPort.id( "null:null");
+            return EmiPort.id("null:null");
         } else if (o instanceof ShapedRecipes sr) {
-            return  EmiPort.id("shaped:" + ((ShapedRecipesAccessor) sr).getRecipeWidth() + "x" + ((ShapedRecipesAccessor) sr).getRecipeHeight() + "/" + describeFlat(((ShapedRecipesAccessor) sr).getRecipeItems()) + "/" +
-                describe(sr.getRecipeOutput()));
+            return EmiPort.id("shaped:" + sr.getRecipeWidth() + "x" + sr.getRecipeHeight() + "/" + describeFlat(sr.getIngredients()) + "/" +
+                    describe(sr.getRecipeOutput()));
         } else if (o instanceof ShapelessRecipes sr) {
-            return  EmiPort.id("shapeless:" + describeFlat(((ShapelessRecipesAccessor)sr).getRecipeItems()) + "/" + describe(sr.getRecipeOutput()));
+            return EmiPort.id("shapeless:" + describeFlat(sr.getIngredients()) + "/" + describe(sr.getRecipeOutput()));
         } else if (o instanceof ShapedOreRecipe sr) {
-            return  EmiPort.id("shaped_ore:" + ((ShapedOreRecipeAccessor) sr).getRecipeWidth() + "x" + ((ShapedOreRecipeAccessor) sr).getRecipeHeight() + "/" +
-                describe(sr.getRecipeOutput().getUnlocalizedName() + "." + sr.getRecipeOutput().getItemDamage()));
+            return EmiPort.id("shaped_ore:" + sr.getRecipeWidth() + "x" + sr.getRecipeHeight() + "/" +
+                    describe(sr.getRecipeOutput().getTranslationKey() + "." + sr.getRecipeOutput().getItemDamage()));
         } else if (o instanceof ShapelessOreRecipe sr) {
-            return  EmiPort.id("shapeless_ore:" + describe(sr.getRecipeOutput().getUnlocalizedName() + "." + sr.getRecipeOutput().getItemDamage()));
+            return EmiPort.id("shapeless_ore:" + describe(sr.getRecipeOutput().getTranslationKey() + "." + sr.getRecipeOutput().getItemDamage()));
         } else if (o instanceof EmiCraftingRecipe cr) {
-            return  EmiPort.id("crafting:" + describeFlat(cr.getInputs()) + "/" + describe(cr.getOutputs()));
+            return EmiPort.id("crafting:" + describeFlat(cr.getInputs()) + "/" + describe(cr.getOutputs()));
         }
-        return  EmiPort.id("unknown:/" + describe(o));
+        return EmiPort.id("unknown:/" + describe(o));
     }
 
     public static String describeFlat(List<?> li) {
@@ -61,10 +57,7 @@ public class SyntheticIdentifier {
         } else if (o instanceof EmiIngredient ei) {
             return ei.getEmiStacks().stream().map(SyntheticIdentifier::describe).collect(Collectors.joining("/", "[", "]"));
         } else if (o instanceof ItemStack is) {
-            if (is.getItem() == null)
-                return "null";
-            else
-                return is.getUnlocalizedName() + "." + is.getItemDamage() + (is.hasTagCompound() ? is.getTagCompound().toString() : "");
+            return is.getTranslationKey() + "." + is.getItemDamage() + (is.hasTagCompound() ? is.getTagCompound().toString() : "");
         } else if (o instanceof Block) {
             return describe(new ItemStack((Block) o));
         } else if (o instanceof String) {

@@ -1,8 +1,8 @@
 package com.rewindmc.retroemi;
 
-import java.util.stream.Stream;
-
 import dev.emi.emi.api.EmiPlugin;
+
+import java.util.stream.Stream;
 
 public interface EmiMultiPlugin {
 

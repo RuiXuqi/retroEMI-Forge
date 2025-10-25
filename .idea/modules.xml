@@ -11,6 +11,11 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/RetroEMI_1.7.10.ideVirtualMain.iml" filepath="$PROJECT_DIR$/.idea/modules/RetroEMI_1.7.10.ideVirtualMain.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/RetroEMI_1.7.10.patchedMc.iml" filepath="$PROJECT_DIR$/.idea/modules/RetroEMI_1.7.10.patchedMc.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/RetroEMI_1.7.10.test.iml" filepath="$PROJECT_DIR$/.idea/modules/RetroEMI_1.7.10.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/retroEMI-Forge.api.iml" filepath="$PROJECT_DIR$/.idea/modules/retroEMI-Forge.api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/retroEMI-Forge.ideVirtualMain.iml" filepath="$PROJECT_DIR$/.idea/modules/retroEMI-Forge.ideVirtualMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/retroEMI-Forge.main.iml" filepath="$PROJECT_DIR$/.idea/modules/retroEMI-Forge.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/retroEMI-Forge.patchedMc.iml" filepath="$PROJECT_DIR$/.idea/modules/retroEMI-Forge.patchedMc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/retroEMI-Forge.test.iml" filepath="$PROJECT_DIR$/.idea/modules/retroEMI-Forge.test.iml" />
     </modules>
   </component>
 </project>

@@ -4,7 +4,7 @@ import net.minecraft.util.ResourceLocation;
 
 public interface EmiResourceReloadListener {
 
-	ResourceLocation getEmiId();
+    ResourceLocation getEmiId();
 
     default void reload() {
 

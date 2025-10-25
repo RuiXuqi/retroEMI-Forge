@@ -4,7 +4,7 @@ import net.minecraft.text.Text;
 
 public interface ConfigEnum {
 
-	String getName();
+    String getName();
 
-	Text getText();
+    Text getText();
 }

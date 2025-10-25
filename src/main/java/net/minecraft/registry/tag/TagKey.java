@@ -2,16 +2,16 @@ package net.minecraft.registry.tag;
 
 import com.google.common.collect.BiMap;
 import com.rewindmc.retroemi.RetroEMI;
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.ModContainer;
-import dev.emi.emi.mixin.accessor.ItemBlockAccessor;
 import net.minecraft.block.Block;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.oredict.OreDictionary;
 
 import java.lang.reflect.Field;
@@ -40,15 +40,17 @@ public class TagKey<T> {
 
     public List<T> getAll() {
         return switch (type) {
-            case ITEM -> (List<T>) expand(OreDictionary.getOres(convertTag(tag))).stream().map(ItemKey::of).collect(Collectors.toList());
-            case BLOCK -> (List<T>) expand(OreDictionary.getOres(convertTag(tag))).stream().filter(stack -> stack.getItem() instanceof ItemBlock)
-                .map(stack -> ((ItemBlockAccessor) stack.getItem()).getBlock()).collect(Collectors.toList());
+            case ITEM ->
+                    (List<T>) expand(OreDictionary.getOres(convertTag(tag))).stream().map(ItemKey::of).collect(Collectors.toList());
+            case BLOCK ->
+                    (List<T>) expand(OreDictionary.getOres(convertTag(tag))).stream().filter(stack -> stack.getItem() instanceof ItemBlock)
+                            .map(stack -> ((ItemBlock) stack.getItem()).getBlock()).collect(Collectors.toList());
             case FLUID -> {
                 //todo this probably breaks everything because backup fluids are not registered
                 String oredict = ":" + convertTag(tag);
                 List<String> modIds = new ArrayList<>(Loader.instance().getModList().stream().map(ModContainer::getModId).collect(Collectors.toList()));
                 modIds.add("minecraft");
-                yield  (List<T>) modIds.stream().map(s -> s + oredict).map(s -> getMasterFluidReference().get(s)).filter(Objects::nonNull).collect(Collectors.toList());
+                yield (List<T>) modIds.stream().map(s -> s + oredict).map(s -> getMasterFluidReference().get(s)).filter(Objects::nonNull).collect(Collectors.toList());
             }
         };
     }
@@ -58,8 +60,8 @@ public class TagKey<T> {
         List<ItemStack> result = new ArrayList<>();
         for (ItemStack stack : stacks) {
             if (stack.getItemDamage() == OreDictionary.WILDCARD_VALUE) {
-                List<ItemStack> itemStacks = new ArrayList<>();
-                stack.getItem().getSubItems(stack.getItem(), CreativeTabs.tabMisc, itemStacks);
+                NonNullList<ItemStack> itemStacks = NonNullList.create();
+                stack.getItem().getSubItems(CreativeTabs.MISC, itemStacks);
                 result.addAll(itemStacks);
             } else {
                 result.add(stack);
@@ -95,10 +97,10 @@ public class TagKey<T> {
     }
 
     private static String convertTag(ResourceLocation tag) {
-        if (tag.getResourceDomain().equals("forge") || tag.getResourceDomain().equals("c")) {
-            return formatTag(tag.getResourcePath());
+        if (tag.getNamespace().equals("forge") || tag.getNamespace().equals("c")) {
+            return formatTag(tag.getPath());
         } else {
-            return formatTag(tag.getResourceDomain() + "/" + tag.getResourcePath());
+            return formatTag(tag.getNamespace() + "/" + tag.getPath());
         }
     }
 
@@ -156,9 +158,12 @@ public class TagKey<T> {
 
         public List<TagKey<?>> getAll() {
             return switch (this) {
-                case ITEM -> Arrays.stream(OreDictionary.getOreNames()).map(s -> TagKey.of(this, convertOredict(s))).collect(Collectors.toList());
-                case BLOCK -> Arrays.stream(OreDictionary.getOreNames()).map(s -> TagKey.of(this, convertOredict(s))).filter(tag -> !tag.getAll().isEmpty()).collect(Collectors.toList());
-                case FLUID -> FluidRegistry.getRegisteredFluids().keySet().stream().map(s -> TagKey.of(this, convertOredict(s))).collect(Collectors.toList());
+                case ITEM ->
+                        Arrays.stream(OreDictionary.getOreNames()).map(s -> TagKey.of(this, convertOredict(s))).collect(Collectors.toList());
+                case BLOCK ->
+                        Arrays.stream(OreDictionary.getOreNames()).map(s -> TagKey.of(this, convertOredict(s))).filter(tag -> !tag.getAll().isEmpty()).collect(Collectors.toList());
+                case FLUID ->
+                        FluidRegistry.getRegisteredFluids().keySet().stream().map(s -> TagKey.of(this, convertOredict(s))).collect(Collectors.toList());
             };
         }
 

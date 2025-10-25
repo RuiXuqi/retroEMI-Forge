@@ -2,19 +2,19 @@ package net.minecraft.client.util.math;
 
 public class Vec2i {
 
-	public int x, y;
+    public int x, y;
 
-	public Vec2i(int x, int y) {
-		this.x = x;
-		this.y = y;
-	}
+    public Vec2i(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 
-	public int x() {
-		return x;
-	}
+    public int x() {
+        return x;
+    }
 
-	public int y() {
-		return y;
-	}
+    public int y() {
+        return y;
+    }
 
 }
