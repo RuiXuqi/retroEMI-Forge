@@ -11,6 +11,8 @@ import dev.emi.emi.registry.EmiPluginContainer;
 import dev.emi.emi.runtime.EmiLog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.creativetab.CreativeTabs;
@@ -26,6 +28,7 @@ import net.minecraft.registry.tag.ItemKey;
 import net.minecraft.text.Text;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.NonNullList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
@@ -318,10 +321,19 @@ public class EmiAgnosForge extends EmiAgnos {
 
     @Override
     protected void renderFluidAgnos(FluidEmiStack stack, MatrixStack matrices, int x, int y, float delta, int xOff, int yOff, int width, int height) {
-        //TODO
-/*        FluidStack fs = new FluidStack(stack.getKeyOfType(Fluid.class), 1000, stack.getNbt());
-        RenderSystem.setShaderTexture(0, TextureMap.LOCATION_BLOCKS_TEXTURE);
-        Minecraft.getMinecraft().currentScreen.drawTexturedModelRectFromIcon(x, y, fs.getFluid().getIcon(), 16, 16);*/
+        FluidStack fs = new FluidStack(stack.getKeyOfType(Fluid.class), 1000, stack.getNbt());
+        Minecraft mc = Minecraft.getMinecraft();
+        ResourceLocation fluidStill = fs.getFluid().getStill();
+        TextureMap textureMapBlocks = mc.getTextureMapBlocks();
+        TextureAtlasSprite fluidStillSprite = null;
+        if (fluidStill != null) {
+            fluidStillSprite = textureMapBlocks.getTextureExtry(fluidStill.toString());
+        }
+        if (fluidStillSprite == null) {
+            fluidStillSprite = textureMapBlocks.getMissingSprite();
+        }
+        mc.renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+        mc.currentScreen.drawTexturedModalRect(x, y, fluidStillSprite, 16, 16);
     }
 
     @Override
