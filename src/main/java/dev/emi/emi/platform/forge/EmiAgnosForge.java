@@ -293,7 +293,7 @@ public class EmiAgnosForge extends EmiAgnos {
     protected List<TooltipComponent> getItemTooltipAgnos(ItemStack stack) {
         List<String> tip = stack.getTooltip(Minecraft.getMinecraft().player, Minecraft.getMinecraft().gameSettings.advancedItemTooltips ? ITooltipFlag.TooltipFlags.ADVANCED : ITooltipFlag.TooltipFlags.NORMAL);
         for (int i = 0; i < tip.size(); i++) {
-            tip.set(i, i == 0 ? stack.getItem().getForgeRarity(stack).getColor().toString() : TextFormatting.GRAY + tip.get(i));
+            tip.set(i, (i == 0 ? stack.getItem().getForgeRarity(stack).getColor() : TextFormatting.GRAY) + tip.get(i));
         }
         return tip.stream()
                 .map(Text::literal).map(TooltipComponent::of)
