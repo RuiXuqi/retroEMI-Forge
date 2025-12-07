@@ -25,51 +25,51 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class EmiConfig {
-	private static final Map<Class<?>, Setter> SETTERS = Maps.newHashMap();
-	private static final Map<Class<?>, Writer<?>> WRITERS = Maps.newHashMap();
-	private static final Map<Class<?>, MultiWriter<?>> MULTI_WRITERS = Maps.newHashMap();
-	private static final Map<String, List<String>> unparsed = Maps.newHashMap();
-	public static final Map<String, Predicate<?>> FILTERS = Maps.newHashMap();
-	public static final String DEFAULT_CONFIG;
-	public static boolean useGlobalConfig = false;
-	public static String startupConfig;
+    private static final Map<Class<?>, Setter> SETTERS = Maps.newHashMap();
+    private static final Map<Class<?>, Writer<?>> WRITERS = Maps.newHashMap();
+    private static final Map<Class<?>, MultiWriter<?>> MULTI_WRITERS = Maps.newHashMap();
+    private static final Map<String, List<String>> unparsed = Maps.newHashMap();
+    public static final Map<String, Predicate<?>> FILTERS = Maps.newHashMap();
+    public static final String DEFAULT_CONFIG;
+    public static boolean useGlobalConfig = false;
+    public static String startupConfig;
 
-	// General
-	@Comment("Whether EMI is enabled and visible.")
-	@ConfigValue("general.enabled")
-	public static boolean enabled = true;
+    // General
+    @Comment("Whether EMI is enabled and visible.")
+    @ConfigValue("general.enabled")
+    public static boolean enabled = true;
 
-	@Comment("Whether cheating in items is enabled.")
-	@ConfigValue("general.cheat-mode")
-	public static CheatMode cheatMode = CheatMode.CREATIVE;
+    @Comment("Whether cheating in items is enabled.")
+    @ConfigValue("general.cheat-mode")
+    public static CheatMode cheatMode = CheatMode.CREATIVE;
 
-	@Comment("How much EMI should use tooltips and popups to show controls and information.")
-	@ConfigValue("general.help-level")
-	public static HelpLevel helpLevel = HelpLevel.NORMAL;
+    @Comment("How much EMI should use tooltips and popups to show controls and information.")
+    @ConfigValue("general.help-level")
+    public static HelpLevel helpLevel = HelpLevel.NORMAL;
 
-	@Comment("Where EMI should pull stacks from to populate the index.")
-	@ConfigValue("general.index-source")
-	public static IndexSource indexSource = IndexSource.CREATIVE;
+    @Comment("Where EMI should pull stacks from to populate the index.")
+    @ConfigValue("general.index-source")
+    public static IndexSource indexSource = IndexSource.CREATIVE;
 
-	@ConfigGroup("general.search")
-	@Comment("Which sidebar should be searched using the search bar.")
-	@ConfigValue("general.search-sidebar")
-	public static SidebarSide searchSidebar = SidebarSide.RIGHT;
+    @ConfigGroup("general.search")
+    @Comment("Which sidebar should be searched using the search bar.")
+    @ConfigValue("general.search-sidebar")
+    public static SidebarSide searchSidebar = SidebarSide.RIGHT;
 
-	@Comment("Whether normal search queries should include the tooltip.")
-	@ConfigValue("general.search-tooltip-by-default")
-	public static boolean searchTooltipByDefault = true;
+    @Comment("Whether normal search queries should include the tooltip.")
+    @ConfigValue("general.search-tooltip-by-default")
+    public static boolean searchTooltipByDefault = true;
 
-	@Comment("Whether normal search queries should include the mod name.")
-	@ConfigValue("general.search-mod-name-by-default")
-	public static boolean searchModNameByDefault = false;
+    @Comment("Whether normal search queries should include the mod name.")
+    @ConfigValue("general.search-mod-name-by-default")
+    public static boolean searchModNameByDefault = false;
 
-	@ConfigGroupEnd
-	@Comment("Whether normal search queries should include the stack's tags.")
-	@ConfigValue("general.search-tags-by-default")
-	public static boolean searchTagsByDefault = false;
+    @ConfigGroupEnd
+    @Comment("Whether normal search queries should include the stack's tags.")
+    @ConfigValue("general.search-tags-by-default")
+    public static boolean searchTagsByDefault = false;
 
-	// UI
+    // UI
 //	@Comment("Which action should be performed when clicking the recipe book.")
 //	@ConfigValue("ui.recipe-book-action")
 //	public static RecipeBookAction recipeBookAction = RecipeBookAction.TOGGLE_CRAFTABLES;

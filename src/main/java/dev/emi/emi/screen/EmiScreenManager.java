@@ -650,197 +650,197 @@ public class EmiScreenManager {
 
 //		EmiProfiler.swap("slots");
 //		renderSlotOverlays(context, mouseX, mouseY, delta, base);
-		EmiProfiler.pop();
+        EmiProfiler.pop();
 
-		RenderSystem.disableDepthTest();
-	}
+        RenderSystem.disableDepthTest();
+    }
 
-	public static void drawForeground(EmiDrawContext context, int mouseX, int mouseY, float delta) {
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (!base.isEmpty() && !isDisabled()) {
-			renderDraggedStack(context, mouseX, mouseY, delta, base);
-			renderCurrentTooltip(context, mouseX, mouseY, delta, base);
-		}
-	}
+    public static void drawForeground(EmiDrawContext context, int mouseX, int mouseY, float delta) {
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (!base.isEmpty() && !isDisabled()) {
+            renderDraggedStack(context, mouseX, mouseY, delta, base);
+            renderCurrentTooltip(context, mouseX, mouseY, delta, base);
+        }
+    }
 
-	private static void renderWidgets(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
-		context.resetColor(); // hijacked screen may leak state
-		RenderSystem.disableLighting(); // weather rendering leaks state
-		context.push();
-		context.matrices().translate(0, 0, 100);
-		emi.render(context.raw(), mouseX, mouseY, delta);
-		tree.render(context.raw(), mouseX, mouseY, delta);
-        nemi.render(context.raw(), mouseX, mouseY, delta);
-		search.render(context.raw(), mouseX, mouseY, delta);
-		context.pop();
-	}
+    private static void renderWidgets(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
+        context.resetColor(); // hijacked screen may leak state
+        RenderSystem.disableLighting(); // weather rendering leaks state
+        context.push();
+        context.matrices().translate(0, 0, 100);
+        emi.render(context.raw(), mouseX, mouseY, delta);
+        tree.render(context.raw(), mouseX, mouseY, delta);
+//        nemi.render(context.raw(), mouseX, mouseY, delta);
+        search.render(context.raw(), mouseX, mouseY, delta);
+        context.pop();
+    }
 
-	private static void renderLastHoveredCraftable(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
-		if (lastHoveredCraftable != null && lastHoveredCraftableOffset != -1) {
-			EmiStackInteraction cur = getHoveredStack(mouseX, mouseY, false, true);
-			if (cur.getRecipeContext() != lastHoveredCraftable.getRecipeContext()) {
-				ScreenSpace space = getHoveredSpace(mouseX, mouseY);
-				if (space != null && (space.getType() == SidebarType.CRAFTABLES || space.getType() == SidebarType.CRAFT_HISTORY)) {
-					MatrixStack view = MatrixStack.INSTANCE;
-					view.pushMatrix();
-					view.translate(0, 0, 200);
-					EmiPort.applyModelViewMatrix();
-					int lhx = space.getRawX(lastHoveredCraftableOffset);
-					int lhy = space.getRawY(lastHoveredCraftableOffset);
-					context.fill(lhx, lhy, 18, 18, 0x44AA00FF);
-					lastHoveredCraftable.getStack().render(context.raw(), lhx + 1, lhy + 1, delta,
-							EmiIngredient.RENDER_ICON);
-					view.popMatrix();
-					EmiPort.applyModelViewMatrix();
-				}
-			}
-		}
-	}
+    private static void renderLastHoveredCraftable(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
+        if (lastHoveredCraftable != null && lastHoveredCraftableOffset != -1) {
+            EmiStackInteraction cur = getHoveredStack(mouseX, mouseY, false, true);
+            if (cur.getRecipeContext() != lastHoveredCraftable.getRecipeContext()) {
+                ScreenSpace space = getHoveredSpace(mouseX, mouseY);
+                if (space != null && (space.getType() == SidebarType.CRAFTABLES || space.getType() == SidebarType.CRAFT_HISTORY)) {
+                    MatrixStack view = MatrixStack.INSTANCE;
+                    view.pushMatrix();
+                    view.translate(0, 0, 200);
+                    EmiPort.applyModelViewMatrix();
+                    int lhx = space.getRawX(lastHoveredCraftableOffset);
+                    int lhy = space.getRawY(lastHoveredCraftableOffset);
+                    context.fill(lhx, lhy, 18, 18, 0x44AA00FF);
+                    lastHoveredCraftable.getStack().render(context.raw(), lhx + 1, lhy + 1, delta,
+                            EmiIngredient.RENDER_ICON);
+                    view.popMatrix();
+                    EmiPort.applyModelViewMatrix();
+                }
+            }
+        }
+    }
 
-	private static void renderDraggedStack(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
-		if (!draggedStack.isEmpty()) {
-			SidebarPanel panel = getHoveredPanel(mouseX, mouseY);
-			if (panel != null) {
-				ScreenSpace space = panel.getHoveredSpace(mouseX, mouseY);
-				if (space != null && space.getType() == SidebarType.FAVORITES) {
-					int pageSize = space.pageSize;
-					int page = panel.page;
-					int index = space.getClosestEdge(mouseX, mouseY);
-					if (index + pageSize * page > EmiFavorites.favorites.size()) {
-						index = EmiFavorites.favorites.size() - pageSize * page;
-					}
-					if (index + pageSize * page > space.getStacks().size()) {
-						index = space.getStacks().size() - pageSize * page;
-					}
-					if (index >= 0) {
-						context.push();
-						context.matrices().translate(0, 0, 200);
-						int dx = space.getEdgeX(index);
-						int dy = space.getEdgeY(index);
-						context.fill(dx - 1, dy, 2, 18, 0xFF00FFFF);
-						context.pop();
-					}
-				}
-			}
-			context.push();
-			context.matrices().translate(0, 0, 400);
-			EmiDragDropHandlers.render(base.screen(), draggedStack, context.raw(), mouseX, mouseY, delta);
-			draggedStack.render(context.raw(), mouseX - 8, mouseY - 8, delta, EmiIngredient.RENDER_ICON);
-			context.pop();
-		}
-	}
+    private static void renderDraggedStack(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
+        if (!draggedStack.isEmpty()) {
+            SidebarPanel panel = getHoveredPanel(mouseX, mouseY);
+            if (panel != null) {
+                ScreenSpace space = panel.getHoveredSpace(mouseX, mouseY);
+                if (space != null && space.getType() == SidebarType.FAVORITES) {
+                    int pageSize = space.pageSize;
+                    int page = panel.page;
+                    int index = space.getClosestEdge(mouseX, mouseY);
+                    if (index + pageSize * page > EmiFavorites.favorites.size()) {
+                        index = EmiFavorites.favorites.size() - pageSize * page;
+                    }
+                    if (index + pageSize * page > space.getStacks().size()) {
+                        index = space.getStacks().size() - pageSize * page;
+                    }
+                    if (index >= 0) {
+                        context.push();
+                        context.matrices().translate(0, 0, 200);
+                        int dx = space.getEdgeX(index);
+                        int dy = space.getEdgeY(index);
+                        context.fill(dx - 1, dy, 2, 18, 0xFF00FFFF);
+                        context.pop();
+                    }
+                }
+            }
+            context.push();
+            context.matrices().translate(0, 0, 400);
+            EmiDragDropHandlers.render(base.screen(), draggedStack, context.raw(), mouseX, mouseY, delta);
+            draggedStack.render(context.raw(), mouseX - 8, mouseY - 8, delta, EmiIngredient.RENDER_ICON);
+            context.pop();
+        }
+    }
 
-	private static void renderCurrentTooltip(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
-		try {
-			ItemStack cursor = null;
-			if (client.currentScreen instanceof GuiContainer) {
-				cursor = client.thePlayer.inventory.getItemStack();;
-			}
-			ScreenSpace space = getHoveredSpace(mouseX, mouseY);
-			if (EmiApi.isCheatMode() && !ItemStacks.isEmpty(cursor) && space != null && space.getType() == SidebarType.INDEX && EmiConfig.deleteCursorStack.isBound()) {
-				List<TooltipComponent> list = com.rewindmc.retroemi.shim.java.List.of(
-					TooltipComponent.of(EmiPort.ordered(EmiPort.translatable("emi.delete_stack"))),
-					TooltipComponent.of(EmiPort.ordered(EmiConfig.deleteCursorStack.getBindText()))
-				);
-				if (space.rtl) {
-					EmiRenderHelper.drawLeftTooltip(base.screen(), context, list, mouseX, mouseY);
-				} else {
-					EmiRenderHelper.drawTooltip(base.screen(), context, list, mouseX, mouseY);
-				}
-			}
-			if (ItemStacks.isEmpty(cursor) && draggedStack.isEmpty()) {
-				EmiProfiler.swap("hover");
-				try {
-					EmiIngredient hov = EmiStack.EMPTY;
-					SidebarType sidebar = SidebarType.NONE;
-					if (getHoveredStack(mouseX, mouseY, false) instanceof SidebarEmiStackInteraction sesi) {
-						hov = sesi.getStack();
-						sidebar = sesi.getType();
-					}
-					List<TooltipComponent> list = Lists.newArrayList();
-					list.addAll(hov.getTooltip());
-					if (EmiApi.getRecipeContext(hov) == null && EmiConfig.showCraft.isHeld()) {
-						EmiRecipe recipe = EmiUtil.getPreferredRecipe(hov, lastPlayerInventory, false);
-						if (recipe != null) {
-							list.add(new RecipeTooltipComponent(recipe, true));
-						}
-					}
-					if (EmiConfig.editMode && sidebar == SidebarType.INDEX) {
-						list.add(TooltipComponent.of(EmiPort.translatable("emi.edit_mode.hide_one", EmiConfig.hideStack.getBindText()).asOrderedText()));
-						list.add(TooltipComponent.of(EmiPort.translatable("emi.edit_mode.hide_all", EmiConfig.hideStackById.getBindText()).asOrderedText()));
-					}
-					if (space != null && space.rtl) {
-						EmiRenderHelper.drawLeftTooltip(base.screen(), context, list, mouseX, mouseY);
-					} else {
-						EmiRenderHelper.drawTooltip(base.screen(), context, list, mouseX, mouseY);
-					}
-				} finally {
-					EmiProfiler.pop();
-				}
-			}
-		} catch (Exception e) {
-			try {
-				EmiLog.error("Error rendering tooltip", e);
-				List<TooltipComponent> list = com.rewindmc.retroemi.shim.java.List.of(
-					EmiTooltipComponents.of(EmiPort.literal("Error rendering tooltip", Formatting.RED)),
-					EmiTooltipComponents.of(EmiPort.literal("See log", Formatting.GRAY))
-				);
-				EmiRenderHelper.drawTooltip(base.screen(), context, list, mouseX, mouseY);
-			} catch (Exception e2) {
-				EmiLog.error("Critical error rendering tooltip", e);
-			}
-		}
-		lastStackTooltipRendered = null;
-	}
+    private static void renderCurrentTooltip(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
+        try {
+            ItemStack cursor = null;
+            if (client.currentScreen instanceof GuiContainer) {
+                cursor = client.player.inventory.getItemStack();;
+            }
+            ScreenSpace space = getHoveredSpace(mouseX, mouseY);
+            if (EmiApi.isCheatMode() && !ItemStacks.isEmpty(cursor) && space != null && space.getType() == SidebarType.INDEX && EmiConfig.deleteCursorStack.isBound()) {
+                List<TooltipComponent> list = com.rewindmc.retroemi.shim.java.List.of(
+                    TooltipComponent.of(EmiPort.ordered(EmiPort.translatable("emi.delete_stack"))),
+                    TooltipComponent.of(EmiPort.ordered(EmiConfig.deleteCursorStack.getBindText()))
+                );
+                if (space.rtl) {
+                    EmiRenderHelper.drawLeftTooltip(base.screen(), context, list, mouseX, mouseY);
+                } else {
+                    EmiRenderHelper.drawTooltip(base.screen(), context, list, mouseX, mouseY);
+                }
+            }
+            if (ItemStacks.isEmpty(cursor) && draggedStack.isEmpty()) {
+                EmiProfiler.swap("hover");
+                try {
+                    EmiIngredient hov = EmiStack.EMPTY;
+                    SidebarType sidebar = SidebarType.NONE;
+                    if (getHoveredStack(mouseX, mouseY, false) instanceof SidebarEmiStackInteraction sesi) {
+                        hov = sesi.getStack();
+                        sidebar = sesi.getType();
+                    }
+                    List<TooltipComponent> list = Lists.newArrayList();
+                    list.addAll(hov.getTooltip());
+                    if (EmiApi.getRecipeContext(hov) == null && EmiConfig.showCraft.isHeld()) {
+                        EmiRecipe recipe = EmiUtil.getPreferredRecipe(hov, lastPlayerInventory, false);
+                        if (recipe != null) {
+                            list.add(new RecipeTooltipComponent(recipe, true));
+                        }
+                    }
+                    if (EmiConfig.editMode && sidebar == SidebarType.INDEX) {
+                        list.add(TooltipComponent.of(EmiPort.translatable("emi.edit_mode.hide_one", EmiConfig.hideStack.getBindText()).asOrderedText()));
+                        list.add(TooltipComponent.of(EmiPort.translatable("emi.edit_mode.hide_all", EmiConfig.hideStackById.getBindText()).asOrderedText()));
+                    }
+                    if (space != null && space.rtl) {
+                        EmiRenderHelper.drawLeftTooltip(base.screen(), context, list, mouseX, mouseY);
+                    } else {
+                        EmiRenderHelper.drawTooltip(base.screen(), context, list, mouseX, mouseY);
+                    }
+                } finally {
+                    EmiProfiler.pop();
+                }
+            }
+        } catch (Exception e) {
+            try {
+                EmiLog.error("Error rendering tooltip", e);
+                List<TooltipComponent> list = com.rewindmc.retroemi.shim.java.List.of(
+                    EmiTooltipComponents.of(EmiPort.literal("Error rendering tooltip", Formatting.RED)),
+                    EmiTooltipComponents.of(EmiPort.literal("See log", Formatting.GRAY))
+                );
+                EmiRenderHelper.drawTooltip(base.screen(), context, list, mouseX, mouseY);
+            } catch (Exception e2) {
+                EmiLog.error("Critical error rendering tooltip", e);
+            }
+        }
+        lastStackTooltipRendered = null;
+    }
 
-	private static void renderDevMode(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
-		if (EmiConfig.devMode) {
-			GuiScreen screen = base.screen();
-			EmiProfiler.swap("dev");
-			int color = 0xFFFFFF;
-			Text title = EmiPort.literal("EMI Dev Mode");
-			int off = -16;
-			int devTextX = getDebugTextX();
-			if (!EmiReloadLog.warnings.isEmpty()) {
-				color = 0xFF0000;
-				off = -11;
-				String warnCount = EmiReloadLog.warningCount + " Warnings";
-				context.drawTextWithShadow(EmiPort.literal(warnCount), devTextX, screen.height - 21, color);
-				int width = Math.max(client.fontRenderer.getStringWidth(title.asString()), client.fontRenderer.getStringWidth(warnCount));
-				if (mouseX >= devTextX && mouseX < width + devTextX && mouseY > screen.height - 28) {
-					context.raw().drawTooltip(client.fontRenderer,
-							Stream.concat(Stream.of(" EMI detected some issues, see log for full details"), EmiReloadLog.warnings.stream()).map(s -> {
-								String a = s;
-								if (a.length() > 10 && client.fontRenderer.getStringWidth(a) > screen.width - 20) {
-									a = client.fontRenderer.trimStringToWidth(a, screen.width - 30) + "...";
-								}
-								return EmiPort.literal(a);
-							})
-							.collect(Collectors.toList()), 0, 20);
-				}
-			}
-			context.drawTextWithShadow(title, devTextX, screen.height + off, color);
-		}
-	}
+    private static void renderDevMode(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
+        if (EmiConfig.devMode) {
+            GuiScreen screen = base.screen();
+            EmiProfiler.swap("dev");
+            int color = 0xFFFFFF;
+            Text title = EmiPort.literal("EMI Dev Mode");
+            int off = -16;
+            int devTextX = getDebugTextX();
+            if (!EmiReloadLog.warnings.isEmpty()) {
+                color = 0xFF0000;
+                off = -11;
+                String warnCount = EmiReloadLog.warningCount + " Warnings";
+                context.drawTextWithShadow(EmiPort.literal(warnCount), devTextX, screen.height - 21, color);
+                int width = Math.max(client.fontRenderer.getStringWidth(title.asString()), client.fontRenderer.getStringWidth(warnCount));
+                if (mouseX >= devTextX && mouseX < width + devTextX && mouseY > screen.height - 28) {
+                    context.raw().drawTooltip(client.fontRenderer,
+                            Stream.concat(Stream.of(" EMI detected some issues, see log for full details"), EmiReloadLog.warnings.stream()).map(s -> {
+                                String a = s;
+                                if (a.length() > 10 && client.fontRenderer.getStringWidth(a) > screen.width - 20) {
+                                    a = client.fontRenderer.trimStringToWidth(a, screen.width - 30) + "...";
+                                }
+                                return EmiPort.literal(a);
+                            })
+                            .collect(Collectors.toList()), 0, 20);
+                }
+            }
+            context.drawTextWithShadow(title, devTextX, screen.height + off, color);
+        }
+    }
 
-	private static void renderExclusionAreas(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
-		if (EmiConfig.highlightExclusionAreas) {
-			for (SidebarPanel panel : panels) {
-				if (panel.isVisible()) {
-					Bounds bounds = panel.getBounds();
-					context.fill(bounds.left(), bounds.top(), bounds.width(), bounds.height(), 0x440000ff);
-				}
-			}
-			List<Bounds> exclusions = EmiExclusionAreas.getExclusion(base);
-			if (exclusions.size() == 0) {
-				return;
-			}
-			for (int i = 0; i < exclusions.size(); i++) {
-				Bounds b = exclusions.get(i);
-				context.fill(b.x(), b.y(), b.width(), b.height(), i == 0 ? 0x4400ff00 : 0x44ff0000);
-			}
-		}
-	}
+    private static void renderExclusionAreas(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
+        if (EmiConfig.highlightExclusionAreas) {
+            for (SidebarPanel panel : panels) {
+                if (panel.isVisible()) {
+                    Bounds bounds = panel.getBounds();
+                    context.fill(bounds.left(), bounds.top(), bounds.width(), bounds.height(), 0x440000ff);
+                }
+            }
+            List<Bounds> exclusions = EmiExclusionAreas.getExclusion(base);
+            if (exclusions.size() == 0) {
+                return;
+            }
+            for (int i = 0; i < exclusions.size(); i++) {
+                Bounds b = exclusions.get(i);
+                context.fill(b.x(), b.y(), b.width(), b.height(), i == 0 ? 0x4400ff00 : 0x44ff0000);
+            }
+        }
+    }
 
 //	@SuppressWarnings({"rawtypes", "unchecked"})
 //	private static void renderSlotOverlays(EmiDrawContext context, int mouseX, int mouseY, float delta, EmiScreenBase base) {
@@ -893,505 +893,505 @@ public class EmiScreenManager {
 //		}
 //	}
 
-	public static void addWidgets(GuiScreen screen) {
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (base.isEmpty()) {
-			return;
-		}
-		forceRecalculate();
-		if (EmiConfig.centerSearchBar || panels.get(0).space == null || panels.get(1).space == null) {
-			search.x = (screen.width - 160) / 2;
-			search.y = screen.height - 21;
-			search.setWidth(160);
-		} else {
-			if (EmiConfig.searchSidebar == SidebarSide.RIGHT) {
-				search.x = panels.get(1).space.tx;
-				search.y = screen.height - 21;
-				search.setWidth(panels.get(1).space.tw * ENTRY_SIZE);
-			} else {
-				search.x = panels.get(0).space.tx;
-				search.y = screen.height - 21 - 21;
-				search.setWidth(panels.get(0).space.tw * ENTRY_SIZE);
-			}
-		}
-		EmiPort.focus(search, false);
-		search.setVisible(EmiConfig.searchSidebar != SidebarSide.NONE);
+    public static void addWidgets(GuiScreen screen) {
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (base.isEmpty()) {
+            return;
+        }
+        forceRecalculate();
+        if (EmiConfig.centerSearchBar || panels.get(0).space == null || panels.get(1).space == null) {
+            search.x = (screen.width - 160) / 2;
+            search.y = screen.height - 21;
+            search.setWidth(160);
+        } else {
+            if (EmiConfig.searchSidebar == SidebarSide.RIGHT) {
+                search.x = panels.get(1).space.tx;
+                search.y = screen.height - 21;
+                search.setWidth(panels.get(1).space.tw * ENTRY_SIZE);
+            } else {
+                search.x = panels.get(0).space.tx;
+                search.y = screen.height - 21 - 21;
+                search.setWidth(panels.get(0).space.tw * ENTRY_SIZE);
+            }
+        }
+        EmiPort.focus(search, false);
+        search.setVisible(EmiConfig.searchSidebar != SidebarSide.NONE);
 
-		emi.x = 2;
-		emi.y = screen.height - 22;
+        emi.x = 2;
+        emi.y = screen.height - 22;
 
-		tree.x = 24;
-		tree.y = screen.height - 22;
+        tree.x = 24;
+        tree.y = screen.height - 22;
 
-        nemi.x = 46;
-        nemi.y = screen.height - 22;
+//        nemi.x = 46;
+//        nemi.y = screen.height - 22;
 
-		updateSidebarButtons();
-	}
+        updateSidebarButtons();
+    }
 
-	private static void updateSidebarButtons() {
-		for (SidebarPanel panel : panels) {
-			panel.updateWidgetPosition();
-			panel.updateWidgetVisibility();
-		}
-	}
+    private static void updateSidebarButtons() {
+        for (SidebarPanel panel : panels) {
+            panel.updateWidgetPosition();
+            panel.updateWidgetVisibility();
+        }
+    }
 
-	private static boolean isClickClicky(int button) {
-		return button >= 0 && button < 3;
-	}
+    private static boolean isClickClicky(int button) {
+        return button >= 0 && button < 3;
+    }
 
-	public static boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (base.isEmpty()) {
-			return false;
-		}
-		scrollAcc += amount;
-		int sa = (int) scrollAcc;
-		scrollAcc %= 1;
-		if (isDisabled()) {
-			return false;
-		}
-		recalculate();
-		SidebarPanel panel = getHoveredPanel((int) mouseX, (int) mouseY);
-		if (panel != null) {
-			int mx = (int) mouseX;
-			int my = (int) mouseY;
-			for (Bounds bounds : EmiExclusionAreas.getExclusion(base)) {
-				if (bounds.contains(mx, my)) {
-					return false;
-				}
-			}
-			panel.scroll(-sa);
-			return true;
-		}
-		return false;
-	}
+    public static boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (base.isEmpty()) {
+            return false;
+        }
+        scrollAcc += amount;
+        int sa = (int) scrollAcc;
+        scrollAcc %= 1;
+        if (isDisabled()) {
+            return false;
+        }
+        recalculate();
+        SidebarPanel panel = getHoveredPanel((int) mouseX, (int) mouseY);
+        if (panel != null) {
+            int mx = (int) mouseX;
+            int my = (int) mouseY;
+            for (Bounds bounds : EmiExclusionAreas.getExclusion(base)) {
+                if (bounds.contains(mx, my)) {
+                    return false;
+                }
+            }
+            panel.scroll(-sa);
+            return true;
+        }
+        return false;
+    }
 
-	public static boolean mouseClicked(double mouseX, double mouseY, int button) {
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (base.isEmpty()) {
-			return false;
-		}
-		if (search.mouseClicked(mouseX, mouseY, button)) {
-			return true;
-		} else if (emi.mouseClicked(mouseX, mouseY, button)) {
-			return true;
-		} else if (tree.mouseClicked(mouseX, mouseY, button)) {
-			return true;
-		} else if (nemi.mouseClicked(mouseX, mouseY, button)) {
-			return true;
-		}
-		for (SidebarPanel panel : panels) {
-			if (panel.cycle.mouseClicked(mouseX, mouseY, button)) {
-				return true;
-			} else if (panel.pageLeft.mouseClicked(mouseX, mouseY, button)) {
-				return true;
-			} else if (panel.pageRight.mouseClicked(mouseX, mouseY, button)) {
-				return true;
-			}
-		}
-		if (isDisabled()) {
-			if (EmiConfig.toggleVisibility.matchesMouse(button)) {
-				toggleVisibility(true);
-				return true;
-			}
-			return false;
-		}
-		recalculate();
-		EmiIngredient ingredient = getHoveredStack((int) mouseX, (int) mouseY, !isClickClicky(button)).getStack();
-		pressedStack = ingredient;
-		if (!ingredient.isEmpty()) {
-			// Don't cancel the event for extra mouse buttons
-			ingredient = getHoveredStack((int) mouseX, (int) mouseY, false).getStack();
-			if (!ingredient.isEmpty()) {
-				return true;
-			}
-		} else {
-			if (genericInteraction(bind -> bind.matchesMouse(button))) {
-				return true;
-			}
-		}
-		return false;
-	}
+    public static boolean mouseClicked(double mouseX, double mouseY, int button) {
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (base.isEmpty()) {
+            return false;
+        }
+        if (search.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        } else if (emi.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        } else if (tree.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+//		} else if (nemi.mouseClicked(mouseX, mouseY, button)) {
+//			return true;
+        }
+        for (SidebarPanel panel : panels) {
+            if (panel.cycle.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            } else if (panel.pageLeft.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            } else if (panel.pageRight.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        if (isDisabled()) {
+            if (EmiConfig.toggleVisibility.matchesMouse(button)) {
+                toggleVisibility(true);
+                return true;
+            }
+            return false;
+        }
+        recalculate();
+        EmiIngredient ingredient = getHoveredStack((int) mouseX, (int) mouseY, !isClickClicky(button)).getStack();
+        pressedStack = ingredient;
+        if (!ingredient.isEmpty()) {
+            // Don't cancel the event for extra mouse buttons
+            ingredient = getHoveredStack((int) mouseX, (int) mouseY, false).getStack();
+            if (!ingredient.isEmpty()) {
+                return true;
+            }
+        } else {
+            if (genericInteraction(bind -> bind.matchesMouse(button))) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	public static boolean mouseReleased(double mouseX, double mouseY, int button) {
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (base.isEmpty()) {
-			return false;
-		}
-		try {
-			if (isDisabled()) {
-				return false;
-			}
-			int mx = (int) mouseX;
-			int my = (int) mouseY;
-			recalculate();
-			if (EmiApi.isCheatMode() && EmiConfig.deleteCursorStack.matchesMouse(button)) {
-				if (deleteCursor(mx, my)) {
-					// Returning false here makes the handled screen do something and removes a bug, oh well.
-					return false;
-				}
-			}
-			SidebarPanel panel = getHoveredPanel(mx, my);
-			if (draggedStack == EmiStack.EMPTY && panel != null && panel.getType() == SidebarType.CHESS) {
-				EmiChess.interact(pressedStack, button);
-				return true;
-			}
-			if (!pressedStack.isEmpty()) {
-				if (!draggedStack.isEmpty()) {
-					if (panel != null) {
-						ScreenSpace space = panel.getHoveredSpace(mx, my);
-						if (space != null && space.getType() == SidebarType.FAVORITES) {
-							int page = panel.page;
-							int pageSize = space.pageSize;
-							int index = Math.min(space.getClosestEdge(mx, my), EmiFavorites.favorites.size());
-							if (index + pageSize * page > EmiFavorites.favorites.size()) {
-								index = EmiFavorites.favorites.size() - pageSize * page;
-							}
-							if (index >= 0) {
-								EmiFavorites.addFavoriteAt(draggedStack, index + pageSize * page);
-								space.batcher.repopulate();
-							}
-							return true;
-						} else if (panel.getType() == SidebarType.CHESS) {
-							EmiChess.drop(draggedStack, getHoveredStack(mx, my, true).getStack());
-						}
-					} else if (client.currentScreen != null) {
-						if (EmiDragDropHandlers.dropStack(client.currentScreen, draggedStack, mx, my)) {
-							return true;
-						}
-					}
-				} else {
-					EmiStackInteraction hovered = getHoveredStack((int) mouseX, (int) mouseY, !isClickClicky(button));
-					if (draggedStack.isEmpty() && stackInteraction(hovered, bind -> bind.matchesMouse(button))) {
-						return true;
-					}
-				}
-				if (genericInteraction(bind -> bind.matchesMouse(button))) {
-					return true;
-				}
-			}
-			return false;
-		} finally {
-			pressedStack = EmiStack.EMPTY;
-			draggedStack = EmiStack.EMPTY;
-		}
-	}
+    public static boolean mouseReleased(double mouseX, double mouseY, int button) {
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (base.isEmpty()) {
+            return false;
+        }
+        try {
+            if (isDisabled()) {
+                return false;
+            }
+            int mx = (int) mouseX;
+            int my = (int) mouseY;
+            recalculate();
+            if (EmiApi.isCheatMode() && EmiConfig.deleteCursorStack.matchesMouse(button)) {
+                if (deleteCursor(mx, my)) {
+                    // Returning false here makes the handled screen do something and removes a bug, oh well.
+                    return false;
+                }
+            }
+            SidebarPanel panel = getHoveredPanel(mx, my);
+            if (draggedStack == EmiStack.EMPTY && panel != null && panel.getType() == SidebarType.CHESS) {
+                EmiChess.interact(pressedStack, button);
+                return true;
+            }
+            if (!pressedStack.isEmpty()) {
+                if (!draggedStack.isEmpty()) {
+                    if (panel != null) {
+                        ScreenSpace space = panel.getHoveredSpace(mx, my);
+                        if (space != null && space.getType() == SidebarType.FAVORITES) {
+                            int page = panel.page;
+                            int pageSize = space.pageSize;
+                            int index = Math.min(space.getClosestEdge(mx, my), EmiFavorites.favorites.size());
+                            if (index + pageSize * page > EmiFavorites.favorites.size()) {
+                                index = EmiFavorites.favorites.size() - pageSize * page;
+                            }
+                            if (index >= 0) {
+                                EmiFavorites.addFavoriteAt(draggedStack, index + pageSize * page);
+                                space.batcher.repopulate();
+                            }
+                            return true;
+                        } else if (panel.getType() == SidebarType.CHESS) {
+                            EmiChess.drop(draggedStack, getHoveredStack(mx, my, true).getStack());
+                        }
+                    } else if (client.currentScreen != null) {
+                        if (EmiDragDropHandlers.dropStack(client.currentScreen, draggedStack, mx, my)) {
+                            return true;
+                        }
+                    }
+                } else {
+                    EmiStackInteraction hovered = getHoveredStack((int) mouseX, (int) mouseY, !isClickClicky(button));
+                    if (draggedStack.isEmpty() && stackInteraction(hovered, bind -> bind.matchesMouse(button))) {
+                        return true;
+                    }
+                }
+                if (genericInteraction(bind -> bind.matchesMouse(button))) {
+                    return true;
+                }
+            }
+            return false;
+        } finally {
+            pressedStack = EmiStack.EMPTY;
+            draggedStack = EmiStack.EMPTY;
+        }
+    }
 
-	public static boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (base.isEmpty()) {
-			return false;
-		}
-		if (isDisabled()) {
-			return false;
-		}
-		if (draggedStack.isEmpty() && button == 0) {
-			if (client.currentScreen instanceof GuiContainer handled) {
-				if (client.thePlayer.inventory.getItemStack() != null) {
-					return false;
-				}
-			}
-			recalculate();
-			EmiStackInteraction hovered = getHoveredStack((int) mouseX, (int) mouseY, !isClickClicky(button));
-			if (hovered.getStack() != pressedStack && !(pressedStack instanceof EmiFavorite.Synthetic)) {
-				draggedStack = pressedStack;
-			}
-		}
-		return false;
-	}
+    public static boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (base.isEmpty()) {
+            return false;
+        }
+        if (isDisabled()) {
+            return false;
+        }
+        if (draggedStack.isEmpty() && button == 0) {
+            if (client.currentScreen instanceof GuiContainer handled) {
+                if (client.player.inventory.getItemStack() != null) {
+                    return false;
+                }
+            }
+            recalculate();
+            EmiStackInteraction hovered = getHoveredStack((int) mouseX, (int) mouseY, !isClickClicky(button));
+            if (hovered.getStack() != pressedStack && !(pressedStack instanceof EmiFavorite.Synthetic)) {
+                draggedStack = pressedStack;
+            }
+        }
+        return false;
+    }
 
-	public static boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (base.isEmpty()) {
-			return false;
-		}
-		if (isDisabled()) {
-			if (EmiConfig.toggleVisibility.matchesKey(keyCode, scanCode)) {
-				toggleVisibility(true);
-				return true;
-			}
-			return false;
-		}
-		if (EmiScreenManager.search.keyPressed(keyCode, scanCode, modifiers) || EmiScreenManager.search.isActive()) {
-			return true;
-		}
-		if (hasFocusedTextField(client.currentScreen, 10)) {
-			return false;
-		}
-		if (EmiApi.isCheatMode() && EmiConfig.deleteCursorStack.matchesKey(keyCode, scanCode)) {
-			if (deleteCursor(lastMouseX, lastMouseY)) {
-				return true;
-			}
-		}
-		if (EmiInput.isControlDown() && keyCode == GLFW.GLFW_KEY_Y) {
-			EmiApi.displayAllRecipes();
-			return true;
-		} else {
-			recalculate();
-			if (stackInteraction(getHoveredStack(lastMouseX, lastMouseY, true),
-					bind -> bind.matchesKey(keyCode, scanCode))) {
-				return true;
-			}
-			if (genericInteraction(bind -> bind.matchesKey(keyCode, scanCode))) {
-				return true;
-			}
-		}
-		return false;
-	}
+    public static boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (base.isEmpty()) {
+            return false;
+        }
+        if (isDisabled()) {
+            if (EmiConfig.toggleVisibility.matchesKey(keyCode, scanCode)) {
+                toggleVisibility(true);
+                return true;
+            }
+            return false;
+        }
+        if (EmiScreenManager.search.keyPressed(keyCode, scanCode, modifiers) || EmiScreenManager.search.isActive()) {
+            return true;
+        }
+        if (hasFocusedTextField(client.currentScreen, 10)) {
+            return false;
+        }
+        if (EmiApi.isCheatMode() && EmiConfig.deleteCursorStack.matchesKey(keyCode, scanCode)) {
+            if (deleteCursor(lastMouseX, lastMouseY)) {
+                return true;
+            }
+        }
+        if (EmiInput.isControlDown() && keyCode == GLFW.GLFW_KEY_Y) {
+            EmiApi.displayAllRecipes();
+            return true;
+        } else {
+            recalculate();
+            if (stackInteraction(getHoveredStack(lastMouseX, lastMouseY, true),
+                    bind -> bind.matchesKey(keyCode, scanCode))) {
+                return true;
+            }
+            if (genericInteraction(bind -> bind.matchesKey(keyCode, scanCode))) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	private static boolean hasFocusedTextField(Object parent, int depthBail) {
-		if (depthBail <= 0) {
-			return false;
-		}
-		if (parent instanceof ParentElement ps) {
-			for (Element e : ps.children()) {
-				if (e instanceof TextFieldWidget tfw && tfw.isActive() && tfw.visible) {
-					return true;
-				} else if (e instanceof ParentElement p) {
-					return hasFocusedTextField(p, depthBail - 1);
-				}
-			}
-		} else {
-			// Haha, I'm in danger
-			for (java.lang.reflect.Field f : parent.getClass().getDeclaredFields()) {
-				f.setAccessible(true);
-				if (GuiTextField.class.isAssignableFrom(f.getType())) {
-					try {
-						if (f.get(parent) instanceof GuiTextField wtf) {
-							if (((GuiTextFieldAccessor) wtf).isEnabled() && wtf.isFocused()) {
-								return true;
-							}
-						}
-					} catch (Throwable e) {
-					}
-				}
-			}
-		}
-		return false;
-	}
+    private static boolean hasFocusedTextField(Object parent, int depthBail) {
+        if (depthBail <= 0) {
+            return false;
+        }
+        if (parent instanceof ParentElement ps) {
+            for (Element e : ps.children()) {
+                if (e instanceof TextFieldWidget tfw && tfw.isActive() && tfw.visible) {
+                    return true;
+                } else if (e instanceof ParentElement p) {
+                    return hasFocusedTextField(p, depthBail - 1);
+                }
+            }
+        } else {
+            // Haha, I'm in danger
+            for (java.lang.reflect.Field f : parent.getClass().getDeclaredFields()) {
+                f.setAccessible(true);
+                if (GuiTextField.class.isAssignableFrom(f.getType())) {
+                    try {
+                        if (f.get(parent) instanceof GuiTextField wtf) {
+                            if (((GuiTextFieldAccessor) wtf).isEnabled() && wtf.isFocused()) {
+                                return true;
+                            }
+                        }
+                    } catch (Throwable e) {
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
-	public static boolean genericInteraction(Function<EmiBind, Boolean> function) {
-		if (function.apply(EmiConfig.toggleVisibility)) {
-			toggleVisibility(true);
-			return true;
-		}
-		boolean searchBreak = false;
-		if (function.apply(EmiConfig.focusSearch)) {
-			if (client.currentScreen != null) {
+    public static boolean genericInteraction(Function<EmiBind, Boolean> function) {
+        if (function.apply(EmiConfig.toggleVisibility)) {
+            toggleVisibility(true);
+            return true;
+        }
+        boolean searchBreak = false;
+        if (function.apply(EmiConfig.focusSearch)) {
+            if (client.currentScreen != null) {
 //				client.currentScreen.setFocused(search);
-				EmiPort.focus(search, true);
-				searchBreak = true;
-			}
-		}
-		if (function.apply(EmiConfig.clearSearch)) {
-			search.setText("");
-			searchBreak = true;
-		}
-		if (searchBreak) {
-			return true;
-		}
-		if (function.apply(EmiConfig.viewTree)) {
-			EmiApi.viewRecipeTree();
-			return true;
-		} else if (function.apply(EmiConfig.back)) {
-			if (!EmiHistory.isEmpty()) {
-				EmiHistory.pop();
-				return true;
-			}
-		} else if (function.apply(EmiConfig.forward)) {
-			if (!EmiHistory.isForwardEmpty()) {
-				EmiHistory.forward();
-				return true;
-			}
-		}
-		return false;
-	}
+                EmiPort.focus(search, true);
+                searchBreak = true;
+            }
+        }
+        if (function.apply(EmiConfig.clearSearch)) {
+            search.setText("");
+            searchBreak = true;
+        }
+        if (searchBreak) {
+            return true;
+        }
+        if (function.apply(EmiConfig.viewTree)) {
+            EmiApi.viewRecipeTree();
+            return true;
+        } else if (function.apply(EmiConfig.back)) {
+            if (!EmiHistory.isEmpty()) {
+                EmiHistory.pop();
+                return true;
+            }
+        } else if (function.apply(EmiConfig.forward)) {
+            if (!EmiHistory.isForwardEmpty()) {
+                EmiHistory.forward();
+                return true;
+            }
+        }
+        return false;
+    }
 
-	public static boolean stackInteraction(EmiStackInteraction stack, Function<EmiBind, Boolean> function) {
-		EmiIngredient ingredient = stack.getStack();
-		EmiRecipe context = EmiApi.getRecipeContext(ingredient);
-		if (!ingredient.isEmpty()) {
-			if (EmiConfig.editMode) {
-				if (stack instanceof SidebarEmiStackInteraction sesi && sesi.getType() == SidebarType.INDEX) {
-					if (function.apply(EmiConfig.hideStack)) {
-						EmiHidden.setVisibility(sesi.getStack(), !EmiHidden.isHidden(sesi.getStack()), false);
-						return true;
-					} else if (function.apply(EmiConfig.hideStackById)) {
-						EmiHidden.setVisibility(sesi.getStack(), !EmiHidden.isHidden(sesi.getStack()), true);
-						return true;
-					}
-				}
-			}
-			if (craftInteraction(ingredient, () -> context, stack, function)) {
-				return true;
-			}
-			if (EmiApi.isCheatMode()) {
-				if (ingredient.getEmiStacks().size() == 1 && stack instanceof SidebarEmiStackInteraction) {
-					if (function.apply(EmiConfig.cheatOneToInventory)) {
-						return give(ingredient.getEmiStacks().get(0), 1, 0);
-					} else if (function.apply(EmiConfig.cheatStackToInventory)) {
-						return give(ingredient.getEmiStacks().get(0),
-								ingredient.getEmiStacks().get(0).getItemStack().getMaxStackSize(), 0);
-					} else if (function.apply(EmiConfig.cheatOneToCursor)) {
-						return give(ingredient.getEmiStacks().get(0), 1, 1);
-					} else if (function.apply(EmiConfig.cheatStackToCursor)) {
-						return give(ingredient.getEmiStacks().get(0),
-								ingredient.getEmiStacks().get(0).getItemStack().getMaxStackSize(), 1);
-					}
-				}
-			}
-			if (function.apply(EmiConfig.viewRecipes)) {
-				EmiApi.displayRecipes(ingredient);
-				if (stack.getRecipeContext() != null) {
-					EmiApi.focusRecipe(stack.getRecipeContext());
-				}
-				return true;
-			} else if (function.apply(EmiConfig.viewUses)) {
-				EmiApi.displayUses(ingredient);
-				return true;
-			} else if (function.apply(EmiConfig.favorite)) {
-				EmiFavorites.addFavorite(ingredient, stack.getRecipeContext());
-				repopulatePanels(SidebarType.FAVORITES);
-				return true;
-			} else if (function.apply(EmiConfig.viewStackTree) && stack.getRecipeContext() != null) {
-				BoM.setGoal(stack.getRecipeContext());
-				EmiApi.viewRecipeTree();
-				return true;
-			}
-			Supplier<EmiRecipe> supplier = () -> {
-				return EmiUtil.getPreferredRecipe(ingredient, lastPlayerInventory, true);
-			};
-			if (craftInteraction(ingredient, supplier, stack, function)) {
-				return true;
-			}
-		}
-		if (recipeInteraction(context, function)) {
-			return true;
-		}
-		return false;
-	}
+    public static boolean stackInteraction(EmiStackInteraction stack, Function<EmiBind, Boolean> function) {
+        EmiIngredient ingredient = stack.getStack();
+        EmiRecipe context = EmiApi.getRecipeContext(ingredient);
+        if (!ingredient.isEmpty()) {
+            if (EmiConfig.editMode) {
+                if (stack instanceof SidebarEmiStackInteraction sesi && sesi.getType() == SidebarType.INDEX) {
+                    if (function.apply(EmiConfig.hideStack)) {
+                        EmiHidden.setVisibility(sesi.getStack(), !EmiHidden.isHidden(sesi.getStack()), false);
+                        return true;
+                    } else if (function.apply(EmiConfig.hideStackById)) {
+                        EmiHidden.setVisibility(sesi.getStack(), !EmiHidden.isHidden(sesi.getStack()), true);
+                        return true;
+                    }
+                }
+            }
+            if (craftInteraction(ingredient, () -> context, stack, function)) {
+                return true;
+            }
+            if (EmiApi.isCheatMode()) {
+                if (ingredient.getEmiStacks().size() == 1 && stack instanceof SidebarEmiStackInteraction) {
+                    if (function.apply(EmiConfig.cheatOneToInventory)) {
+                        return give(ingredient.getEmiStacks().get(0), 1, 0);
+                    } else if (function.apply(EmiConfig.cheatStackToInventory)) {
+                        return give(ingredient.getEmiStacks().get(0),
+                                ingredient.getEmiStacks().get(0).getItemStack().getMaxStackSize(), 0);
+                    } else if (function.apply(EmiConfig.cheatOneToCursor)) {
+                        return give(ingredient.getEmiStacks().get(0), 1, 1);
+                    } else if (function.apply(EmiConfig.cheatStackToCursor)) {
+                        return give(ingredient.getEmiStacks().get(0),
+                                ingredient.getEmiStacks().get(0).getItemStack().getMaxStackSize(), 1);
+                    }
+                }
+            }
+            if (function.apply(EmiConfig.viewRecipes)) {
+                EmiApi.displayRecipes(ingredient);
+                if (stack.getRecipeContext() != null) {
+                    EmiApi.focusRecipe(stack.getRecipeContext());
+                }
+                return true;
+            } else if (function.apply(EmiConfig.viewUses)) {
+                EmiApi.displayUses(ingredient);
+                return true;
+            } else if (function.apply(EmiConfig.favorite)) {
+                EmiFavorites.addFavorite(ingredient, stack.getRecipeContext());
+                repopulatePanels(SidebarType.FAVORITES);
+                return true;
+            } else if (function.apply(EmiConfig.viewStackTree) && stack.getRecipeContext() != null) {
+                BoM.setGoal(stack.getRecipeContext());
+                EmiApi.viewRecipeTree();
+                return true;
+            }
+            Supplier<EmiRecipe> supplier = () -> {
+                return EmiUtil.getPreferredRecipe(ingredient, lastPlayerInventory, true);
+            };
+            if (craftInteraction(ingredient, supplier, stack, function)) {
+                return true;
+            }
+        }
+        if (recipeInteraction(context, function)) {
+            return true;
+        }
+        return false;
+    }
 
-	private static boolean craftInteraction(EmiIngredient ingredient, Supplier<EmiRecipe> contextSupplier,
-			EmiStackInteraction stack, Function<EmiBind, Boolean> function) {
-		if (!(stack instanceof SidebarEmiStackInteraction)) {
-			return false;
-		}
-		EmiCraftContext.Destination destination = null;
-		boolean all = false;
-		if (function.apply(EmiConfig.craftAllToInventory)) {
-			destination = EmiCraftContext.Destination.INVENTORY;
-			all = true;
-		} else if (function.apply(EmiConfig.craftOneToInventory)) {
-			destination = EmiCraftContext.Destination.INVENTORY;
-		} else if (function.apply(EmiConfig.craftOneToCursor)) {
-			destination = EmiCraftContext.Destination.CURSOR;
-		} else if (function.apply(EmiConfig.craftAll)) {
-			destination = EmiCraftContext.Destination.NONE;
-			all = true;
-		} else if (function.apply(EmiConfig.craftOne)) {
-			destination = EmiCraftContext.Destination.NONE;
-		}
-		if (destination != null) {
-			EmiRecipe context = contextSupplier.get();
-			if (context != null) {
-				if (EmiConfig.miscraftPrevention) {
-					ScreenSpace space = getHoveredSpace(lastMouseX, lastMouseY);
-					if (space != null && (space.getType() == SidebarType.CRAFTABLES || space.getType() == SidebarType.CRAFT_HISTORY)) {
-						lastHoveredCraftableOffset = space.getRawOffsetFromMouse(lastMouseX, lastMouseY);
-						if (lastHoveredCraftableOffset != -1) {
-							lastHoveredCraftableSturdy = lastHoveredCraftable != null;
-							lastHoveredCraftable = stack;
-							if (!all) {
-								lastHoveredCraftableSturdy = true;
-							}
-						}
-					}
-				}
-				int amount = all ? Integer.MAX_VALUE : 1;
-				if (stack.getStack() instanceof EmiFavorite.Synthetic syn) {
-					int batches = (int) syn.batches;
-					if (syn.getRecipe() == null) {
-						int oc = EmiUtil.getOutputCount(context, syn.getStack());
-						if (oc > 0) {
-							batches /= oc;
-						}
-					}
-					amount = Math.min(amount, batches);
-				}
-				if (EmiRecipeFiller.performFill(context, EmiApi.getHandledScreen(), EmiCraftContext.Type.CRAFTABLE, destination, amount)) {
-					Minecraft.getMinecraft().getSoundHandler()
-							.playSound(PositionedSoundRecord.func_147674_a(new ResourceLocation("gui.button.press"), 1.0F));
-					return true;
-				}
-			}
-		}
-		return false;
-	}
+    private static boolean craftInteraction(EmiIngredient ingredient, Supplier<EmiRecipe> contextSupplier,
+            EmiStackInteraction stack, Function<EmiBind, Boolean> function) {
+        if (!(stack instanceof SidebarEmiStackInteraction)) {
+            return false;
+        }
+        EmiCraftContext.Destination destination = null;
+        boolean all = false;
+        if (function.apply(EmiConfig.craftAllToInventory)) {
+            destination = EmiCraftContext.Destination.INVENTORY;
+            all = true;
+        } else if (function.apply(EmiConfig.craftOneToInventory)) {
+            destination = EmiCraftContext.Destination.INVENTORY;
+        } else if (function.apply(EmiConfig.craftOneToCursor)) {
+            destination = EmiCraftContext.Destination.CURSOR;
+        } else if (function.apply(EmiConfig.craftAll)) {
+            destination = EmiCraftContext.Destination.NONE;
+            all = true;
+        } else if (function.apply(EmiConfig.craftOne)) {
+            destination = EmiCraftContext.Destination.NONE;
+        }
+        if (destination != null) {
+            EmiRecipe context = contextSupplier.get();
+            if (context != null) {
+                if (EmiConfig.miscraftPrevention) {
+                    ScreenSpace space = getHoveredSpace(lastMouseX, lastMouseY);
+                    if (space != null && (space.getType() == SidebarType.CRAFTABLES || space.getType() == SidebarType.CRAFT_HISTORY)) {
+                        lastHoveredCraftableOffset = space.getRawOffsetFromMouse(lastMouseX, lastMouseY);
+                        if (lastHoveredCraftableOffset != -1) {
+                            lastHoveredCraftableSturdy = lastHoveredCraftable != null;
+                            lastHoveredCraftable = stack;
+                            if (!all) {
+                                lastHoveredCraftableSturdy = true;
+                            }
+                        }
+                    }
+                }
+                int amount = all ? Integer.MAX_VALUE : 1;
+                if (stack.getStack() instanceof EmiFavorite.Synthetic syn) {
+                    int batches = (int) syn.batches;
+                    if (syn.getRecipe() == null) {
+                        int oc = EmiUtil.getOutputCount(context, syn.getStack());
+                        if (oc > 0) {
+                            batches /= oc;
+                        }
+                    }
+                    amount = Math.min(amount, batches);
+                }
+                if (EmiRecipeFiller.performFill(context, EmiApi.getHandledScreen(), EmiCraftContext.Type.CRAFTABLE, destination, amount)) {
+                    Minecraft.getMinecraft().getSoundHandler()
+                            .playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-	public static boolean recipeInteraction(EmiRecipe recipe, Function<EmiBind, Boolean> function) {
-		if (recipe == null) {
-			return false;
-		}
-		if (function.apply(EmiConfig.favorite) && recipe.getOutputs().size() > 0) {
-			EmiFavorites.addFavorite(recipe.getOutputs().get(0), recipe);
-			repopulatePanels(SidebarType.FAVORITES);
-			return true;
-		} else if (function.apply(EmiConfig.copyId)) {
-            Minecraft.getMinecraft().getSoundHandler().playSound(PositionedSoundRecord.func_147674_a(new ResourceLocation("gui.button.press"), 1.0F));
-			StringSelection ss = new StringSelection("" + recipe.getId());
-			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, (ClipboardOwner) null);
-			return true;
-		}
-		return false;
-	}
+    public static boolean recipeInteraction(EmiRecipe recipe, Function<EmiBind, Boolean> function) {
+        if (recipe == null) {
+            return false;
+        }
+        if (function.apply(EmiConfig.favorite) && recipe.getOutputs().size() > 0) {
+            EmiFavorites.addFavorite(recipe.getOutputs().get(0), recipe);
+            repopulatePanels(SidebarType.FAVORITES);
+            return true;
+        } else if (function.apply(EmiConfig.copyId)) {
+            Minecraft.getMinecraft().getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            StringSelection ss = new StringSelection("" + recipe.getId());
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, (ClipboardOwner) null);
+            return true;
+        }
+        return false;
+    }
 
-	public static void toggleVisibility(boolean notify) {
-		EmiConfig.enabled = !EmiConfig.enabled;
-		EmiConfig.writeConfig();
-		//		if (notify && !EmiConfig.enabled && EmiConfig.helpLevel.has(HelpLevel.VERBOSE)) {
-		//			client.getToastManager().add(new DisabledToast());
-		//		}
-	}
+    public static void toggleVisibility(boolean notify) {
+        EmiConfig.enabled = !EmiConfig.enabled;
+        EmiConfig.writeConfig();
+        //		if (notify && !EmiConfig.enabled && EmiConfig.helpLevel.has(HelpLevel.VERBOSE)) {
+        //			client.getToastManager().add(new DisabledToast());
+        //		}
+    }
 
-	private static boolean give(EmiStack stack, int amount, int mode) {
-		if (ItemStacks.isEmpty(stack.getItemStack())) {
-			return false;
-		}
-		ItemStack is = stack.getItemStack().copy();
-		is.stackSize = (amount);
-		if (mode == 1 && client.thePlayer.capabilities.isCreativeMode && client.currentScreen instanceof GuiContainerCreative) {
-			client.thePlayer.inventory.setItemStack(is);
-			return true;
-		}
-		if (EmiClient.onServer) {
-			EmiNetwork.sendToServer(new CreateItemC2SPacket(mode, is));
-			return true;
-		} else {
-			if (!ItemStacks.isEmpty(is)) {
-				String id = Item.itemRegistry.getNameForObject(is.getItem());
-				String command = "/give @p " + id;
-				command += " " + amount + " " + is.getItemDamage();
-				if (is.hasTagCompound()) {
-					String nbt = RetroEMI.sanitizeNBT(is.getTagCompound().toString());
-					command += nbt;
-				}
-				if (command.length() < 256) {
-					((PlayerControllerMPAccessor) client.playerController).getNetClientHandler().addToSendQueue(new C01PacketChatMessage(command));
-					return true;
-				}
-			}
-			return false;
-		}
-	}
+    private static boolean give(EmiStack stack, int amount, int mode) {
+        if (ItemStacks.isEmpty(stack.getItemStack())) {
+            return false;
+        }
+        ItemStack is = stack.getItemStack().copy();
+        is.setCount(amount);
+        if (mode == 1 && client.player.capabilities.isCreativeMode && client.currentScreen instanceof GuiContainerCreative) {
+            client.player.inventory.setItemStack(is);
+            return true;
+        }
+        if (EmiClient.onServer) {
+            EmiNetwork.sendToServer(new CreateItemC2SPacket(mode, is));
+            return true;
+        } else {
+            if (!ItemStacks.isEmpty(is)) {
+                String id = is.getTranslationKey();
+                String command = "/give @p " + id;
+                command += " " + amount + " " + is.getItemDamage();
+                if (is.hasTagCompound()) {
+                    String nbt = RetroEMI.sanitizeNBT(is.getTagCompound().toString());
+                    command += nbt;
+                }
+                if (command.length() < 256) {
+                    ((PlayerControllerMPAccessor) client.playerController).getConnection().sendPacket(new CPacketChatMessage(command));
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 
-	private static boolean deleteCursor(int mx, int my) {
-		if (client.currentScreen instanceof GuiContainer handled) {
-			ItemStack cursor = client.thePlayer.inventory.getItemStack();
-			ScreenSpace space = getHoveredSpace(mx, my);
-			if (!ItemStacks.isEmpty(cursor) && space != null && space.getType() == SidebarType.INDEX) {
-				client.thePlayer.inventory.setItemStack(null);
-				if (FMLCommonHandler.instance().getSide().isServer()) {
+    private static boolean deleteCursor(int mx, int my) {
+        if (client.currentScreen instanceof GuiContainer handled) {
+            ItemStack cursor = client.player.inventory.getItemStack();
+            ScreenSpace space = getHoveredSpace(mx, my);
+            if (!ItemStacks.isEmpty(cursor) && space != null && space.getType() == SidebarType.INDEX) {
+                client.player.inventory.setItemStack(null);
+                if (FMLCommonHandler.instance().getSide().isServer()) {
                     EmiNetwork.sendToServer(new CreateItemC2SPacket(1, null));
                 }
                 return true;

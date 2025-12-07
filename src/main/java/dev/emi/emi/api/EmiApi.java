@@ -45,10 +45,10 @@ public class EmiApi {
         return EmiRecipes.manager;
     }
 
-	public static boolean isCheatMode() {
+    public static boolean isCheatMode() {
         return switch (EmiConfig.cheatMode) {
             case TRUE -> true;
-            case CREATIVE -> client.thePlayer == null || client.thePlayer.capabilities.isCreativeMode;
+            case CREATIVE -> client.player == null || client.player.capabilities.isCreativeMode;
             case FALSE -> false;
         };
     }
