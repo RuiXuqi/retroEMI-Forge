@@ -670,7 +670,7 @@ public class EmiScreenManager {
         context.matrices().translate(0, 0, 100);
         emi.render(context.raw(), mouseX, mouseY, delta);
         tree.render(context.raw(), mouseX, mouseY, delta);
-        //nemi.render(context.raw(), mouseX, mouseY, delta);
+//        nemi.render(context.raw(), mouseX, mouseY, delta);
         search.render(context.raw(), mouseX, mouseY, delta);
         context.pop();
     }
@@ -734,14 +734,13 @@ public class EmiScreenManager {
         try {
             ItemStack cursor = null;
             if (client.currentScreen instanceof GuiContainer) {
-                cursor = client.player.inventory.getItemStack();
-                ;
+                cursor = client.player.inventory.getItemStack();;
             }
             ScreenSpace space = getHoveredSpace(mouseX, mouseY);
-            if (EmiConfig.cheatMode && !ItemStacks.isEmpty(cursor) && space != null && space.getType() == SidebarType.INDEX && EmiConfig.deleteCursorStack.isBound()) {
+            if (EmiApi.isCheatMode() && !ItemStacks.isEmpty(cursor) && space != null && space.getType() == SidebarType.INDEX && EmiConfig.deleteCursorStack.isBound()) {
                 List<TooltipComponent> list = com.rewindmc.retroemi.shim.java.List.of(
-                        TooltipComponent.of(EmiPort.ordered(EmiPort.translatable("emi.delete_stack"))),
-                        TooltipComponent.of(EmiPort.ordered(EmiConfig.deleteCursorStack.getBindText()))
+                    TooltipComponent.of(EmiPort.ordered(EmiPort.translatable("emi.delete_stack"))),
+                    TooltipComponent.of(EmiPort.ordered(EmiConfig.deleteCursorStack.getBindText()))
                 );
                 if (space.rtl) {
                     EmiRenderHelper.drawLeftTooltip(base.screen(), context, list, mouseX, mouseY);
@@ -783,8 +782,8 @@ public class EmiScreenManager {
             try {
                 EmiLog.error("Error rendering tooltip", e);
                 List<TooltipComponent> list = com.rewindmc.retroemi.shim.java.List.of(
-                        EmiTooltipComponents.of(EmiPort.literal("Error rendering tooltip", Formatting.RED)),
-                        EmiTooltipComponents.of(EmiPort.literal("See log", Formatting.GRAY))
+                    EmiTooltipComponents.of(EmiPort.literal("Error rendering tooltip", Formatting.RED)),
+                    EmiTooltipComponents.of(EmiPort.literal("See log", Formatting.GRAY))
                 );
                 EmiRenderHelper.drawTooltip(base.screen(), context, list, mouseX, mouseY);
             } catch (Exception e2) {
@@ -811,13 +810,13 @@ public class EmiScreenManager {
                 if (mouseX >= devTextX && mouseX < width + devTextX && mouseY > screen.height - 28) {
                     context.raw().drawTooltip(client.fontRenderer,
                             Stream.concat(Stream.of(" EMI detected some issues, see log for full details"), EmiReloadLog.warnings.stream()).map(s -> {
-                                        String a = s;
-                                        if (a.length() > 10 && client.fontRenderer.getStringWidth(a) > screen.width - 20) {
-                                            a = client.fontRenderer.trimStringToWidth(a, screen.width - 30) + "...";
-                                        }
-                                        return EmiPort.literal(a);
-                                    })
-                                    .collect(Collectors.toList()), 0, 20);
+                                String a = s;
+                                if (a.length() > 10 && client.fontRenderer.getStringWidth(a) > screen.width - 20) {
+                                    a = client.fontRenderer.trimStringToWidth(a, screen.width - 30) + "...";
+                                }
+                                return EmiPort.literal(a);
+                            })
+                            .collect(Collectors.toList()), 0, 20);
                 }
             }
             context.drawTextWithShadow(title, devTextX, screen.height + off, color);
@@ -924,8 +923,8 @@ public class EmiScreenManager {
         tree.x = 24;
         tree.y = screen.height - 22;
 
-        //nemi.x = 46;
-        //nemi.y = screen.height - 22;
+//        nemi.x = 46;
+//        nemi.y = screen.height - 22;
 
         updateSidebarButtons();
     }
@@ -979,9 +978,9 @@ public class EmiScreenManager {
             return true;
         } else if (tree.mouseClicked(mouseX, mouseY, button)) {
             return true;
-        }/* else if (nemi.mouseClicked(mouseX, mouseY, button)) {
-            return true;
-        }*/
+//		} else if (nemi.mouseClicked(mouseX, mouseY, button)) {
+//			return true;
+        }
         for (SidebarPanel panel : panels) {
             if (panel.cycle.mouseClicked(mouseX, mouseY, button)) {
                 return true;
@@ -1027,7 +1026,7 @@ public class EmiScreenManager {
             int mx = (int) mouseX;
             int my = (int) mouseY;
             recalculate();
-            if (EmiConfig.cheatMode && EmiConfig.deleteCursorStack.matchesMouse(button)) {
+            if (EmiApi.isCheatMode() && EmiConfig.deleteCursorStack.matchesMouse(button)) {
                 if (deleteCursor(mx, my)) {
                     // Returning false here makes the handled screen do something and removes a bug, oh well.
                     return false;
@@ -1120,7 +1119,7 @@ public class EmiScreenManager {
         if (hasFocusedTextField(client.currentScreen, 10)) {
             return false;
         }
-        if (EmiConfig.cheatMode && EmiConfig.deleteCursorStack.matchesKey(keyCode, scanCode)) {
+        if (EmiApi.isCheatMode() && EmiConfig.deleteCursorStack.matchesKey(keyCode, scanCode)) {
             if (deleteCursor(lastMouseX, lastMouseY)) {
                 return true;
             }
@@ -1227,7 +1226,7 @@ public class EmiScreenManager {
             if (craftInteraction(ingredient, () -> context, stack, function)) {
                 return true;
             }
-            if (EmiConfig.cheatMode) {
+            if (EmiApi.isCheatMode()) {
                 if (ingredient.getEmiStacks().size() == 1 && stack instanceof SidebarEmiStackInteraction) {
                     if (function.apply(EmiConfig.cheatOneToInventory)) {
                         return give(ingredient.getEmiStacks().get(0), 1, 0);
@@ -1274,7 +1273,7 @@ public class EmiScreenManager {
     }
 
     private static boolean craftInteraction(EmiIngredient ingredient, Supplier<EmiRecipe> contextSupplier,
-                                            EmiStackInteraction stack, Function<EmiBind, Boolean> function) {
+            EmiStackInteraction stack, Function<EmiBind, Boolean> function) {
         if (!(stack instanceof SidebarEmiStackInteraction)) {
             return false;
         }
@@ -1321,7 +1320,8 @@ public class EmiScreenManager {
                     amount = Math.min(amount, batches);
                 }
                 if (EmiRecipeFiller.performFill(context, EmiApi.getHandledScreen(), EmiCraftContext.Type.CRAFTABLE, destination, amount)) {
-                    Minecraft.getMinecraft().getSoundHandler().playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                    Minecraft.getMinecraft().getSoundHandler()
+                            .playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                     return true;
                 }
             }
@@ -1369,7 +1369,7 @@ public class EmiScreenManager {
             return true;
         } else {
             if (!ItemStacks.isEmpty(is)) {
-                String id = EmiPort.getItemRegistry().getKey(is.getItem()).toString();
+                String id = is.getTranslationKey();
                 String command = "/give @p " + id;
                 command += " " + amount + " " + is.getItemDamage();
                 if (is.hasTagCompound()) {
