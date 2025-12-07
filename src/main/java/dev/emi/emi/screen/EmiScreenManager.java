@@ -1,24 +1,9 @@
 package dev.emi.emi.screen;
 
-import java.awt.*;
-import java.awt.datatransfer.ClipboardOwner;
-import java.awt.datatransfer.StringSelection;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.rewindmc.retroemi.RetroEMI;
-import dev.emi.emi.nemi.NemiPlugin;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
-
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
-
-import cpw.mods.fml.common.FMLCommonHandler;
 import com.rewindmc.retroemi.ItemStacks;
+import com.rewindmc.retroemi.RetroEMI;
 import dev.emi.emi.EmiPort;
 import dev.emi.emi.EmiRenderHelper;
 import dev.emi.emi.EmiUtil;
@@ -33,641 +18,635 @@ import dev.emi.emi.api.stack.EmiStackInteraction;
 import dev.emi.emi.api.widget.Bounds;
 import dev.emi.emi.bom.BoM;
 import dev.emi.emi.chess.EmiChess;
-import dev.emi.emi.config.EmiConfig;
-import dev.emi.emi.config.HeaderType;
-import dev.emi.emi.config.Margins;
-import dev.emi.emi.config.ScreenAlign;
-import dev.emi.emi.config.SidebarPages;
-import dev.emi.emi.config.SidebarSettings;
-import dev.emi.emi.config.SidebarSide;
-import dev.emi.emi.config.SidebarSubpanels;
-import dev.emi.emi.config.SidebarTheme;
-import dev.emi.emi.config.SidebarType;
+import dev.emi.emi.config.*;
 import dev.emi.emi.input.EmiBind;
 import dev.emi.emi.input.EmiInput;
-import dev.emi.emi.mixin.accessor.GuiTextFieldAccessor;
-import dev.emi.emi.mixin.accessor.PlayerControllerMPAccessor;
+import dev.emi.emi.mixin.early.accessor.GuiTextFieldAccessor;
+import dev.emi.emi.mixin.early.accessor.PlayerControllerMPAccessor;
 import dev.emi.emi.network.CreateItemC2SPacket;
 import dev.emi.emi.network.EmiNetwork;
 import dev.emi.emi.platform.EmiClient;
-import dev.emi.emi.registry.EmiDragDropHandlers;
-import dev.emi.emi.registry.EmiExclusionAreas;
-import dev.emi.emi.registry.EmiRecipeFiller;
-import dev.emi.emi.registry.EmiRecipes;
-import dev.emi.emi.registry.EmiStackProviders;
-import dev.emi.emi.runtime.EmiDrawContext;
-import dev.emi.emi.runtime.EmiFavorite;
-import dev.emi.emi.runtime.EmiFavorites;
-import dev.emi.emi.runtime.EmiHidden;
-import dev.emi.emi.runtime.EmiHistory;
-import dev.emi.emi.runtime.EmiLog;
-import dev.emi.emi.runtime.EmiProfiler;
-import dev.emi.emi.runtime.EmiReloadLog;
-import dev.emi.emi.runtime.EmiReloadManager;
-import dev.emi.emi.runtime.EmiSidebars;
+import dev.emi.emi.registry.*;
+import dev.emi.emi.runtime.*;
 import dev.emi.emi.screen.tooltip.RecipeTooltipComponent;
 import dev.emi.emi.screen.widget.EmiSearchWidget;
 import dev.emi.emi.screen.widget.SidebarButtonWidget;
 import dev.emi.emi.screen.widget.SizedButtonWidget;
 import dev.emi.emi.search.EmiSearch;
-import net.minecraft.item.Item;
-import net.minecraft.network.play.client.C01PacketChatMessage;
-import net.minecraft.util.Formatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
+import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiContainerCreative;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.MathHelper;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.init.SoundEvents;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.MathHelper;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
+
+import java.awt.*;
+import java.awt.datatransfer.ClipboardOwner;
+import java.awt.datatransfer.StringSelection;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class EmiScreenManager {
-	private static final int PADDING_SIZE = 1;
-	private static final int ENTRY_SIZE = 16 + PADDING_SIZE * 2;
-	private static final int SUBPANEL_SEPARATOR_SIZE = 3;
-	private static Minecraft client = Minecraft.getMinecraft();
-	private static List<? extends EmiIngredient> searchedStacks = com.rewindmc.retroemi.shim.java.List.of();
-	private static int lastWidth, lastHeight;
-	private static List<Bounds> lastExclusion;
-	//	private static StackBatcher.ClaimedCollection batchers = new StackBatcher.ClaimedCollection();
-	private static List<SidebarPanel> panels =  com.rewindmc.retroemi.shim.java.List.of(
-			new SidebarPanel(SidebarSide.LEFT, EmiConfig.leftSidebarPages),
-			new SidebarPanel(SidebarSide.RIGHT, EmiConfig.rightSidebarPages),
-			new SidebarPanel(SidebarSide.TOP, EmiConfig.topSidebarPages),
-			new SidebarPanel(SidebarSide.BOTTOM, EmiConfig.bottomSidebarPages));
-	// The last stack that was used to draw a tooltip, cleared each frame
-	public static ItemStack lastStackTooltipRendered;
-	private static long lastPlayerInventorySync = 0;
-	public static EmiPlayerInventory lastPlayerInventory;
-	public static int lastMouseX, lastMouseY;
-	// The stack that was clicked on, for determining when a drag properly starts
-	public static EmiIngredient pressedStack = EmiStack.EMPTY;
-	public static EmiIngredient draggedStack = EmiStack.EMPTY;
-	// Prevent users from clicking on the wrong thing as their index changes under
-	// them
-	private static EmiStackInteraction lastHoveredCraftable = null;
-	// Whether the craftable has been used multiple times, indicating it shouldn't
-	// disappear
-	// Even if the recipe it was focusing becomes invalid
-	private static boolean lastHoveredCraftableSturdy = false;
-	private static int lastHoveredCraftableOffset = -1;
-	private static double scrollAcc = 0;
+    private static final int PADDING_SIZE = 1;
+    private static final int ENTRY_SIZE = 16 + PADDING_SIZE * 2;
+    private static final int SUBPANEL_SEPARATOR_SIZE = 3;
+    private static Minecraft client = Minecraft.getMinecraft();
+    private static List<? extends EmiIngredient> searchedStacks = com.rewindmc.retroemi.shim.java.List.of();
+    private static int lastWidth, lastHeight;
+    private static List<Bounds> lastExclusion;
+    //	private static StackBatcher.ClaimedCollection batchers = new StackBatcher.ClaimedCollection();
+    private static List<SidebarPanel> panels = com.rewindmc.retroemi.shim.java.List.of(
+            new SidebarPanel(SidebarSide.LEFT, EmiConfig.leftSidebarPages),
+            new SidebarPanel(SidebarSide.RIGHT, EmiConfig.rightSidebarPages),
+            new SidebarPanel(SidebarSide.TOP, EmiConfig.topSidebarPages),
+            new SidebarPanel(SidebarSide.BOTTOM, EmiConfig.bottomSidebarPages));
+    // The last stack that was used to draw a tooltip, cleared each frame
+    public static ItemStack lastStackTooltipRendered;
+    private static long lastPlayerInventorySync = 0;
+    public static EmiPlayerInventory lastPlayerInventory;
+    public static int lastMouseX, lastMouseY;
+    // The stack that was clicked on, for determining when a drag properly starts
+    public static EmiIngredient pressedStack = EmiStack.EMPTY;
+    public static EmiIngredient draggedStack = EmiStack.EMPTY;
+    // Prevent users from clicking on the wrong thing as their index changes under
+    // them
+    private static EmiStackInteraction lastHoveredCraftable = null;
+    // Whether the craftable has been used multiple times, indicating it shouldn't
+    // disappear
+    // Even if the recipe it was focusing becomes invalid
+    private static boolean lastHoveredCraftableSturdy = false;
+    private static int lastHoveredCraftableOffset = -1;
+    private static double scrollAcc = 0;
 
-	public static EmiSearchWidget search = new EmiSearchWidget(client.fontRenderer, 0, 0, 160, 18);
-	public static SizedButtonWidget emi = new SizedButtonWidget(0, 0, 20, 20, 204, 0,
-			() -> true, (w) -> client.displayGuiScreen(new ConfigScreen(client.currentScreen)),
-			com.rewindmc.retroemi.shim.java.List.of(EmiPort.translatable("tooltip.emi.config", EmiRenderHelper.getEmiText())));
-	public static SizedButtonWidget tree = new SizedButtonWidget(0, 0, 20, 20, 184, 0,
-			() -> true, (w) -> EmiApi.viewRecipeTree(),
-			com.rewindmc.retroemi.shim.java.List.of(EmiPort.translatable("tooltip.emi.recipe_tree")));
-    public static SizedButtonWidget nemi = new SizedButtonWidget(0, 0, 20, 20, 184, 0,
-			() -> true, (w) -> NemiPlugin.cycleNemi(),
-			com.rewindmc.retroemi.shim.java.List.of(EmiPort.translatable("tooltip.emi.nemi")));
+    public static EmiSearchWidget search = new EmiSearchWidget(client.fontRenderer, 0, 0, 160, 18);
+    public static SizedButtonWidget emi = new SizedButtonWidget(0, 0, 20, 20, 204, 0,
+            () -> true, (w) -> client.displayGuiScreen(new ConfigScreen(client.currentScreen)),
+            com.rewindmc.retroemi.shim.java.List.of(EmiPort.translatable("tooltip.emi.config", EmiRenderHelper.getEmiText())));
+    public static SizedButtonWidget tree = new SizedButtonWidget(0, 0, 20, 20, 184, 0,
+            () -> true, (w) -> EmiApi.viewRecipeTree(),
+            com.rewindmc.retroemi.shim.java.List.of(EmiPort.translatable("tooltip.emi.recipe_tree")));
+/*    public static SizedButtonWidget nemi = new SizedButtonWidget(0, 0, 20, 20, 184, 0,
+            () -> true, (w) -> NemiPlugin.cycleNemi(),
+            com.rewindmc.retroemi.shim.java.List.of(EmiPort.translatable("tooltip.emi.nemi")));*/
 
-	public static boolean isDisabled() {
-		return !EmiReloadManager.isLoaded() || !EmiConfig.enabled;
-	}
+    public static boolean isDisabled() {
+        return !EmiReloadManager.isLoaded() || !EmiConfig.enabled;
+    }
 
-	public static void recalculate() {
-		updateCraftables();
-		SidebarPanel searchPanel = getSearchPanel();
-		if (searchPanel != null && searchPanel.space != null) {
-			if (searchedStacks != EmiSearch.stacks) {
-				searchPanel.space.batcher.repopulate();
-				searchedStacks = EmiSearch.stacks;
-			}
-		}
+    public static void recalculate() {
+        updateCraftables();
+        SidebarPanel searchPanel = getSearchPanel();
+        if (searchPanel != null && searchPanel.space != null) {
+            if (searchedStacks != EmiSearch.stacks) {
+                searchPanel.space.batcher.repopulate();
+                searchedStacks = EmiSearch.stacks;
+            }
+        }
 
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (base.isEmpty()) {
-			return;
-		}
-		GuiScreen screen = base.screen();
-		List<Bounds> exclusion = EmiExclusionAreas.getExclusion(base);
-		if (lastWidth == screen.width && lastHeight == screen.height && exclusion.size() == lastExclusion.size()) {
-			boolean same = true;
-			for (int i = 0; i < exclusion.size(); i++) {
-				Bounds a = exclusion.get(i);
-				Bounds b = lastExclusion.get(i);
-				if (a.x() != b.x() || a.y() != b.y() || a.width() != b.width() || a.height() != b.height()) {
-					same = false;
-					break;
-				}
-			}
-			if (same) {
-				return;
-			}
-		}
-		for (SidebarPanel panel : panels) {
-			for (ScreenSpace space : panel.getSpaces()) {
-				space.batcher.repopulate();
-			}
-		}
-		lastWidth = screen.width;
-		lastHeight = screen.height;
-		lastExclusion = exclusion;
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (base.isEmpty()) {
+            return;
+        }
+        GuiScreen screen = base.screen();
+        List<Bounds> exclusion = EmiExclusionAreas.getExclusion(base);
+        if (lastWidth == screen.width && lastHeight == screen.height && exclusion.size() == lastExclusion.size()) {
+            boolean same = true;
+            for (int i = 0; i < exclusion.size(); i++) {
+                Bounds a = exclusion.get(i);
+                Bounds b = lastExclusion.get(i);
+                if (a.x() != b.x() || a.y() != b.y() || a.width() != b.width() || a.height() != b.height()) {
+                    same = false;
+                    break;
+                }
+            }
+            if (same) {
+                return;
+            }
+        }
+        for (SidebarPanel panel : panels) {
+            for (ScreenSpace space : panel.getSpaces()) {
+                space.batcher.repopulate();
+            }
+        }
+        lastWidth = screen.width;
+        lastHeight = screen.height;
+        lastExclusion = exclusion;
 
-		Bounds bounds = base.bounds();
-		int left = Math.max(ENTRY_SIZE * 2, bounds.left());
-		int right = Math.min(screen.width - ENTRY_SIZE * 2, bounds.right());
-		int top = bounds.left();
-		int bottom = bounds.bottom();
+        Bounds bounds = base.bounds();
+        int left = Math.max(ENTRY_SIZE * 2, bounds.left());
+        int right = Math.min(screen.width - ENTRY_SIZE * 2, bounds.right());
+        int top = bounds.left();
+        int bottom = bounds.bottom();
 
 //		batchers.unclaimAll();
 
-		List<Bounds> spaceExclusion = Lists.newArrayList();
-		spaceExclusion.addAll(exclusion);
+        List<Bounds> spaceExclusion = Lists.newArrayList();
+        spaceExclusion.addAll(exclusion);
 
-		createScreenSpace(panels.get(0), screen, spaceExclusion, false,
-				new Bounds(0, 0, left, screen.height),
-				SidebarSettings.LEFT);
+        createScreenSpace(panels.get(0), screen, spaceExclusion, false,
+                new Bounds(0, 0, left, screen.height),
+                SidebarSettings.LEFT);
 
-		createScreenSpace(panels.get(1), screen, spaceExclusion, true,
-				new Bounds(right, 0, screen.width - right, screen.height),
-				SidebarSettings.RIGHT);
+        createScreenSpace(panels.get(1), screen, spaceExclusion, true,
+                new Bounds(right, 0, screen.width - right, screen.height),
+                SidebarSettings.RIGHT);
 
-		spaceExclusion = Lists.newArrayList();
-		if (panels.get(0).isVisible()) {
-			spaceExclusion.add(panels.get(0).getBounds());
-		}
-		if (panels.get(1).isVisible()) {
-			spaceExclusion.add(panels.get(1).getBounds());
-		}
-		spaceExclusion.addAll(exclusion);
+        spaceExclusion = Lists.newArrayList();
+        if (panels.get(0).isVisible()) {
+            spaceExclusion.add(panels.get(0).getBounds());
+        }
+        if (panels.get(1).isVisible()) {
+            spaceExclusion.add(panels.get(1).getBounds());
+        }
+        spaceExclusion.addAll(exclusion);
 
-		int topCenter = EmiConfig.topSidebarSize.values.get(0) * ENTRY_SIZE / 2 + EmiConfig.topSidebarTheme.horizontalPadding;
-		int topSpaceBottom = switch (EmiConfig.topSidebarAlign.horizontal) {
-			case LEFT -> getVerticalConstraint(panels.get(0), EmiConfig.topSidebarMargins.left() + topCenter, top, screen.height, true);
-			case CENTER -> top;
-			case RIGHT -> getVerticalConstraint(panels.get(1), right - EmiConfig.topSidebarMargins.right() + topCenter, top, screen.height, true);
-		};
-		boolean topRtl = EmiConfig.topSidebarAlign.horizontal == ScreenAlign.Horizontal.RIGHT;
+        int topCenter = EmiConfig.topSidebarSize.values.get(0) * ENTRY_SIZE / 2 + EmiConfig.topSidebarTheme.horizontalPadding;
+        int topSpaceBottom = switch (EmiConfig.topSidebarAlign.horizontal) {
+            case LEFT ->
+                    getVerticalConstraint(panels.get(0), EmiConfig.topSidebarMargins.left() + topCenter, top, screen.height, true);
+            case CENTER -> top;
+            case RIGHT ->
+                    getVerticalConstraint(panels.get(1), right - EmiConfig.topSidebarMargins.right() + topCenter, top, screen.height, true);
+        };
+        boolean topRtl = EmiConfig.topSidebarAlign.horizontal == ScreenAlign.Horizontal.RIGHT;
 
-		createScreenSpace(panels.get(2), screen, spaceExclusion, topRtl,
-				new Bounds(0, 0, screen.width, topSpaceBottom),
-				SidebarSettings.TOP);
+        createScreenSpace(panels.get(2), screen, spaceExclusion, topRtl,
+                new Bounds(0, 0, screen.width, topSpaceBottom),
+                SidebarSettings.TOP);
 
-		int bottomCenter = EmiConfig.bottomSidebarSize.values.get(0) * ENTRY_SIZE / 2 + EmiConfig.bottomSidebarTheme.horizontalPadding;
-		int bottomSpaceTop = switch (EmiConfig.bottomSidebarAlign.horizontal) {
-			case LEFT -> getVerticalConstraint(panels.get(0), EmiConfig.bottomSidebarMargins.left() + bottomCenter, bottom, 0, false);
-			case CENTER -> bottom;
-			case RIGHT -> getVerticalConstraint(panels.get(1), EmiConfig.bottomSidebarMargins.right() + bottomCenter, bottom, 0, false);
-		};
-		boolean bottomRtl = EmiConfig.bottomSidebarAlign.horizontal == ScreenAlign.Horizontal.RIGHT;
+        int bottomCenter = EmiConfig.bottomSidebarSize.values.get(0) * ENTRY_SIZE / 2 + EmiConfig.bottomSidebarTheme.horizontalPadding;
+        int bottomSpaceTop = switch (EmiConfig.bottomSidebarAlign.horizontal) {
+            case LEFT ->
+                    getVerticalConstraint(panels.get(0), EmiConfig.bottomSidebarMargins.left() + bottomCenter, bottom, 0, false);
+            case CENTER -> bottom;
+            case RIGHT ->
+                    getVerticalConstraint(panels.get(1), EmiConfig.bottomSidebarMargins.right() + bottomCenter, bottom, 0, false);
+        };
+        boolean bottomRtl = EmiConfig.bottomSidebarAlign.horizontal == ScreenAlign.Horizontal.RIGHT;
 
-		createScreenSpace(panels.get(3), screen, spaceExclusion, bottomRtl,
-				new Bounds(0, bottomSpaceTop, screen.width, screen.height - bottomSpaceTop),
-				SidebarSettings.BOTTOM);
+        createScreenSpace(panels.get(3), screen, spaceExclusion, bottomRtl,
+                new Bounds(0, bottomSpaceTop, screen.width, screen.height - bottomSpaceTop),
+                SidebarSettings.BOTTOM);
 
-		updateSidebarButtons();
-	}
+        updateSidebarButtons();
+    }
 
-	private static void updateCraftables() {
-		int minDelay = 400;
-		if (hasSidebarVisible(SidebarType.CRAFTABLES)) {
-			minDelay = 50;
-		}
-		if (lastPlayerInventory == null || Math.abs(System.currentTimeMillis() - lastPlayerInventorySync) >= minDelay) {
-			lastPlayerInventorySync = System.currentTimeMillis();
-			EmiPlayerInventory inv = EmiPlayerInventory.of(client.thePlayer);
-			SidebarPanel searchPanel = getSearchPanel();
-			if (!inv.isEqual(lastPlayerInventory)) {
-				lastPlayerInventory = inv;
-				EmiSidebars.craftables = lastPlayerInventory.getCraftables();
-				if (searchPanel != null && searchPanel.space != null) {
-					searchPanel.space.batcher.repopulate();
-					if (searchPanel.getType() == SidebarType.CRAFTABLES) {
-						EmiSearch.update();
-					}
-				}
-				EmiFavorites.updateSynthetic(inv);
-				repopulatePanels(SidebarType.CRAFTABLES);
-			}
-		}
-	}
+    private static void updateCraftables() {
+        int minDelay = 400;
+        if (hasSidebarVisible(SidebarType.CRAFTABLES)) {
+            minDelay = 50;
+        }
+        if (lastPlayerInventory == null || Math.abs(System.currentTimeMillis() - lastPlayerInventorySync) >= minDelay) {
+            lastPlayerInventorySync = System.currentTimeMillis();
+            EmiPlayerInventory inv = EmiPlayerInventory.of(client.player);
+            SidebarPanel searchPanel = getSearchPanel();
+            if (!inv.isEqual(lastPlayerInventory)) {
+                lastPlayerInventory = inv;
+                EmiSidebars.craftables = lastPlayerInventory.getCraftables();
+                if (searchPanel != null && searchPanel.space != null) {
+                    searchPanel.space.batcher.repopulate();
+                    if (searchPanel.getType() == SidebarType.CRAFTABLES) {
+                        EmiSearch.update();
+                    }
+                }
+                EmiFavorites.updateSynthetic(inv);
+                repopulatePanels(SidebarType.CRAFTABLES);
+            }
+        }
+    }
 
-	public static void forceRecalculate() {
-		lastWidth = -1;
-		lastPlayerInventory = null;
-		recalculate();
-	}
+    public static void forceRecalculate() {
+        lastWidth = -1;
+        lastPlayerInventory = null;
+        recalculate();
+    }
 
-	public static void updateSearchSidebar() {
-		if (search.isFocused || !search.getText().isEmpty()) {
-			EmiScreenManager.focusSearchSidebarType(EmiConfig.searchSidebarFocus);
-		} else {
-			EmiScreenManager.focusSearchSidebarType(EmiConfig.emptySearchSidebarFocus);
-		}
-	}
+    public static void updateSearchSidebar() {
+        if (search.isFocused || !search.getText().isEmpty()) {
+            EmiScreenManager.focusSearchSidebarType(EmiConfig.searchSidebarFocus);
+        } else {
+            EmiScreenManager.focusSearchSidebarType(EmiConfig.emptySearchSidebarFocus);
+        }
+    }
 
-	private static int getVerticalConstraint(SidebarPanel panel, int cx, int def, int max, boolean top) {
-		if (panel.isVisible()) {
-			Bounds bounds = panel.getBounds();
-			if (bounds.x() <= cx && bounds.right() >= cx) {
-				return top ? Math.max(def, bounds.top()) : Math.min(def, bounds.bottom());
-			}
-		}
-		return max;
-	}
+    private static int getVerticalConstraint(SidebarPanel panel, int cx, int def, int max, boolean top) {
+        if (panel.isVisible()) {
+            Bounds bounds = panel.getBounds();
+            if (bounds.x() <= cx && bounds.right() >= cx) {
+                return top ? Math.max(def, bounds.top()) : Math.min(def, bounds.bottom());
+            }
+        }
+        return max;
+    }
 
-	private static void createScreenSpace(SidebarPanel panel, GuiScreen screen, List<Bounds> exclusion,
-			boolean rtl, Bounds bounds, SidebarSettings settings) {
-		Margins margins = settings.margins();
-		ScreenAlign align = settings.align();
-		SidebarTheme theme = settings.theme();
-		SidebarSubpanels subpanels = settings.subpanels();
-		boolean header = settings.header() == HeaderType.VISIBLE;
+    private static void createScreenSpace(SidebarPanel panel, GuiScreen screen, List<Bounds> exclusion,
+                                          boolean rtl, Bounds bounds, SidebarSettings settings) {
+        Margins margins = settings.margins();
+        ScreenAlign align = settings.align();
+        SidebarTheme theme = settings.theme();
+        SidebarSubpanels subpanels = settings.subpanels();
+        boolean header = settings.header() == HeaderType.VISIBLE;
 
-		int maxWidth = settings.size().values.get(0);
-		int maxHeight = settings.size().values.get(1);
+        int maxWidth = settings.size().values.get(0);
+        int maxHeight = settings.size().values.get(1);
 
-		int subpanelHeight = 0;
-		for (SidebarSubpanels.Subpanel subpanel : subpanels.subpanels) {
-			subpanelHeight += subpanel.rows() * ENTRY_SIZE + SUBPANEL_SEPARATOR_SIZE;
-			maxHeight -= subpanel.rows();
-		}
+        int subpanelHeight = 0;
+        for (SidebarSubpanels.Subpanel subpanel : subpanels.subpanels) {
+            subpanelHeight += subpanel.rows() * ENTRY_SIZE + SUBPANEL_SEPARATOR_SIZE;
+            maxHeight -= subpanel.rows();
+        }
 
-		if (panel.getType() == SidebarType.CHESS) {
-			maxWidth = 8;
-			maxHeight = 8;
-			theme = SidebarTheme.MODERN;
-		}
-		int cx = bounds.x() + bounds.width() / 2;
-		int cy = bounds.y() + bounds.height() / 2;
-		int headerOffset = header ? 18 : 0;
+        if (panel.getType() == SidebarType.CHESS) {
+            maxWidth = 8;
+            maxHeight = 8;
+            theme = SidebarTheme.MODERN;
+        }
+        int cx = bounds.x() + bounds.width() / 2;
+        int cy = bounds.y() + bounds.height() / 2;
+        int headerOffset = header ? 18 : 0;
 
-		// Try a more optimistic approach to position the bounding box slightly more
-		// pleasantly if applicable
-		int idealWidth = Math.min(
-				maxWidth * ENTRY_SIZE + margins.left() + margins.right() + theme.horizontalPadding * 2, bounds.width());
-		int idealHeight = Math.min(
-				maxHeight * ENTRY_SIZE + margins.top() + margins.bottom() + theme.verticalPadding * 2 + headerOffset + subpanelHeight,
-				bounds.height());
-		int idealX = switch (align.horizontal) {
-			case LEFT -> bounds.x();
-			case CENTER -> bounds.x() + bounds.width() / 2 - idealWidth / 2;
-			case RIGHT -> bounds.right() - idealWidth;
-		};
-		int idealY = switch (align.horizontal) {
-			case LEFT -> bounds.y();
-			case CENTER -> bounds.y() + bounds.height() / 2 - idealHeight / 2;
-			case RIGHT -> bounds.bottom() - idealHeight;
-		};
-		Bounds idealBounds = constrainBounds(exclusion, new Bounds(idealX, idealY, idealWidth, idealHeight), align,
-				headerOffset);
+        // Try a more optimistic approach to position the bounding box slightly more
+        // pleasantly if applicable
+        int idealWidth = Math.min(
+                maxWidth * ENTRY_SIZE + margins.left() + margins.right() + theme.horizontalPadding * 2, bounds.width());
+        int idealHeight = Math.min(
+                maxHeight * ENTRY_SIZE + margins.top() + margins.bottom() + theme.verticalPadding * 2 + headerOffset + subpanelHeight,
+                bounds.height());
+        int idealX = switch (align.horizontal) {
+            case LEFT -> bounds.x();
+            case CENTER -> bounds.x() + bounds.width() / 2 - idealWidth / 2;
+            case RIGHT -> bounds.right() - idealWidth;
+        };
+        int idealY = switch (align.horizontal) {
+            case LEFT -> bounds.y();
+            case CENTER -> bounds.y() + bounds.height() / 2 - idealHeight / 2;
+            case RIGHT -> bounds.bottom() - idealHeight;
+        };
+        Bounds idealBounds = constrainBounds(exclusion, new Bounds(idealX, idealY, idealWidth, idealHeight), align,
+                headerOffset);
 
-		bounds = constrainBounds(exclusion, bounds, align, headerOffset);
+        bounds = constrainBounds(exclusion, bounds, align, headerOffset);
 
-		if (Math.min(idealWidth, idealBounds.width()) * Math.min(idealHeight, idealBounds.height()) > Math
-				.min(idealWidth, bounds.width()) * Math.min(idealHeight, bounds.height())) {
-			bounds = idealBounds;
-		}
+        if (Math.min(idealWidth, idealBounds.width()) * Math.min(idealHeight, idealBounds.height()) > Math
+                .min(idealWidth, bounds.width()) * Math.min(idealHeight, bounds.height())) {
+            bounds = idealBounds;
+        }
 
-		int xMin = bounds.left() + margins.left() + theme.horizontalPadding;
-		int xMax = bounds.right() - margins.right() - theme.horizontalPadding;
-		int yMin = bounds.top() + margins.top() + theme.verticalPadding;
-		int yMax = bounds.bottom() - margins.bottom() - theme.verticalPadding;
-		int xSpan = xMax - xMin;
-		int ySpan = yMax - yMin;
-		int tw = Math.max(0, Math.min((xSpan) / ENTRY_SIZE, maxWidth));
-		int th = Math.max(0, Math.min((ySpan - headerOffset - subpanelHeight) / ENTRY_SIZE, maxHeight));
-		int hl = xMin;
-		int hr = xMax - tw * ENTRY_SIZE;
-		int tx = switch (align.horizontal) {
-			case LEFT -> hl;
-			case CENTER -> MathHelper.clamp_int(cx - (tw * ENTRY_SIZE) / 2, hl, hr);
-			case RIGHT -> hr;
-		};
-		int vt = yMin + headerOffset;
-		int vb = yMax - th * ENTRY_SIZE - subpanelHeight;
-		int ty = switch (align.vertical) {
-			case TOP -> vt;
-			case CENTER -> MathHelper.clamp_int(cy - (th * ENTRY_SIZE - headerOffset + subpanelHeight + theme.verticalPadding / 2) / 2, vt, vb);
-			case BOTTOM -> vb;
-		};
-		panel.header = header;
-		panel.theme = theme;
-		ScreenSpace space = new ScreenSpace(tx, ty, tw, th, rtl, exclusion, () -> panel.getType(), panel.isSearch());
-		List<ScreenSpace> subspaces = Lists.newArrayList();
-		for (SidebarSubpanels.Subpanel subpanel : subpanels.subpanels) {
-			ty += th * ENTRY_SIZE + SUBPANEL_SEPARATOR_SIZE;
-			th = subpanel.rows();
-			subspaces.add(new ScreenSpace(tx, ty, tw, th, rtl, exclusion, () -> subpanel.type, false));
-		}
-		panel.setSpaces(space, subspaces);
-	}
+        int xMin = bounds.left() + margins.left() + theme.horizontalPadding;
+        int xMax = bounds.right() - margins.right() - theme.horizontalPadding;
+        int yMin = bounds.top() + margins.top() + theme.verticalPadding;
+        int yMax = bounds.bottom() - margins.bottom() - theme.verticalPadding;
+        int xSpan = xMax - xMin;
+        int ySpan = yMax - yMin;
+        int tw = Math.max(0, Math.min((xSpan) / ENTRY_SIZE, maxWidth));
+        int th = Math.max(0, Math.min((ySpan - headerOffset - subpanelHeight) / ENTRY_SIZE, maxHeight));
+        int hl = xMin;
+        int hr = xMax - tw * ENTRY_SIZE;
+        int tx = switch (align.horizontal) {
+            case LEFT -> hl;
+            case CENTER -> MathHelper.clamp(cx - (tw * ENTRY_SIZE) / 2, hl, hr);
+            case RIGHT -> hr;
+        };
+        int vt = yMin + headerOffset;
+        int vb = yMax - th * ENTRY_SIZE - subpanelHeight;
+        int ty = switch (align.vertical) {
+            case TOP -> vt;
+            case CENTER ->
+                    MathHelper.clamp(cy - (th * ENTRY_SIZE - headerOffset + subpanelHeight + theme.verticalPadding / 2) / 2, vt, vb);
+            case BOTTOM -> vb;
+        };
+        panel.header = header;
+        panel.theme = theme;
+        ScreenSpace space = new ScreenSpace(tx, ty, tw, th, rtl, exclusion, () -> panel.getType(), panel.isSearch());
+        List<ScreenSpace> subspaces = Lists.newArrayList();
+        for (SidebarSubpanels.Subpanel subpanel : subpanels.subpanels) {
+            ty += th * ENTRY_SIZE + SUBPANEL_SEPARATOR_SIZE;
+            th = subpanel.rows();
+            subspaces.add(new ScreenSpace(tx, ty, tw, th, rtl, exclusion, () -> subpanel.type, false));
+        }
+        panel.setSpaces(space, subspaces);
+    }
 
-	private static Bounds constrainBounds(List<Bounds> exclusion, Bounds bounds, ScreenAlign align, int headerOffset) {
-		for (int i = 0; i < exclusion.size(); i++) {
-			Bounds overlap = exclusion.get(i).overlap(bounds);
-			if (!overlap.empty() && !bounds.empty()) {
-				if (overlap.top() < bounds.top() + ENTRY_SIZE + headerOffset || overlap.width() >= bounds.width() * 2 / 3
-						|| overlap.height() >= bounds.height() / 3) {
-					int widthFactor = overlap.width() * 10 / bounds.width();
-					int heightFactor = overlap.height() * 10 / bounds.height();
-					if (heightFactor < widthFactor) {
-						int cy = bounds.y() + bounds.height() / 2;
-						int ocy = overlap.y() + overlap.height() / 2;
-						cy += switch (align.vertical) {
-							case TOP -> -bounds.height() / 4;
-							case CENTER -> 0;
-							case BOTTOM -> bounds.height() / 4;
-						};
-						if (cy < ocy) {
-							bounds = new Bounds(bounds.x(), bounds.y(), bounds.width(), overlap.top() - bounds.top());
-						} else {
-							bounds = new Bounds(bounds.x(), overlap.bottom(), bounds.width(),
-									bounds.bottom() - overlap.bottom());
-						}
-					} else {
-						int cx = bounds.x() + bounds.width() / 2;
-						int ocx = overlap.x() + overlap.width() / 2;
-						cx += switch (align.horizontal) {
-							case LEFT -> -bounds.width() / 4;
-							case CENTER -> 0;
-							case RIGHT -> bounds.width() / 4;
-						};
-						if (cx < ocx) {
-							bounds = new Bounds(bounds.x(), bounds.y(), overlap.left() - bounds.left(),
-									bounds.height());
-						} else {
-							bounds = new Bounds(overlap.right(), bounds.y(), bounds.right() - overlap.right(),
-									bounds.height());
-						}
-					}
-					i = -1;
-				}
-			}
-		}
-		if (bounds.empty()) {
-			return Bounds.EMPTY;
-		}
-		return bounds;
-	}
+    private static Bounds constrainBounds(List<Bounds> exclusion, Bounds bounds, ScreenAlign align, int headerOffset) {
+        for (int i = 0; i < exclusion.size(); i++) {
+            Bounds overlap = exclusion.get(i).overlap(bounds);
+            if (!overlap.empty() && !bounds.empty()) {
+                if (overlap.top() < bounds.top() + ENTRY_SIZE + headerOffset || overlap.width() >= bounds.width() * 2 / 3
+                        || overlap.height() >= bounds.height() / 3) {
+                    int widthFactor = overlap.width() * 10 / bounds.width();
+                    int heightFactor = overlap.height() * 10 / bounds.height();
+                    if (heightFactor < widthFactor) {
+                        int cy = bounds.y() + bounds.height() / 2;
+                        int ocy = overlap.y() + overlap.height() / 2;
+                        cy += switch (align.vertical) {
+                            case TOP -> -bounds.height() / 4;
+                            case CENTER -> 0;
+                            case BOTTOM -> bounds.height() / 4;
+                        };
+                        if (cy < ocy) {
+                            bounds = new Bounds(bounds.x(), bounds.y(), bounds.width(), overlap.top() - bounds.top());
+                        } else {
+                            bounds = new Bounds(bounds.x(), overlap.bottom(), bounds.width(),
+                                    bounds.bottom() - overlap.bottom());
+                        }
+                    } else {
+                        int cx = bounds.x() + bounds.width() / 2;
+                        int ocx = overlap.x() + overlap.width() / 2;
+                        cx += switch (align.horizontal) {
+                            case LEFT -> -bounds.width() / 4;
+                            case CENTER -> 0;
+                            case RIGHT -> bounds.width() / 4;
+                        };
+                        if (cx < ocx) {
+                            bounds = new Bounds(bounds.x(), bounds.y(), overlap.left() - bounds.left(),
+                                    bounds.height());
+                        } else {
+                            bounds = new Bounds(overlap.right(), bounds.y(), bounds.right() - overlap.right(),
+                                    bounds.height());
+                        }
+                    }
+                    i = -1;
+                }
+            }
+        }
+        if (bounds.empty()) {
+            return Bounds.EMPTY;
+        }
+        return bounds;
+    }
 
-	public static void focusSearchSidebarType(SidebarType type) {
-		SidebarPanel search = getSearchPanel();
-		if (search != null && search.supportsType(type)) {
-			search.setType(type);
-		}
-	}
+    public static void focusSearchSidebarType(SidebarType type) {
+        SidebarPanel search = getSearchPanel();
+        if (search != null && search.supportsType(type)) {
+            search.setType(type);
+        }
+    }
 
-	public static void focusSidebarType(SidebarType type) {
-		for (SidebarPanel panel : panels) {
-			if (panel.supportsType(type)) {
-				panel.setType(type);
-			}
-		}
-	}
+    public static void focusSidebarType(SidebarType type) {
+        for (SidebarPanel panel : panels) {
+            if (panel.supportsType(type)) {
+                panel.setType(type);
+            }
+        }
+    }
 
-	public static @Nullable SidebarPanel getPanelFor(SidebarSide side) {
-		for (SidebarPanel panel : panels) {
-			if (panel.side == side) {
-				return panel;
-			}
-		}
-		return null;
-	}
+    public static @Nullable SidebarPanel getPanelFor(SidebarSide side) {
+        for (SidebarPanel panel : panels) {
+            if (panel.side == side) {
+                return panel;
+            }
+        }
+        return null;
+    }
 
-	public static @Nullable SidebarPanel getPanelFor(SidebarType type) {
-		for (SidebarPanel panel : panels) {
-			if (panel.getType() == type) {
-				return panel;
-			}
-		}
-		return null;
-	}
+    public static @Nullable SidebarPanel getPanelFor(SidebarType type) {
+        for (SidebarPanel panel : panels) {
+            if (panel.getType() == type) {
+                return panel;
+            }
+        }
+        return null;
+    }
 
-	public static @Nullable SidebarPanel getHoveredPanel(int mouseX, int mouseY) {
-		for (SidebarPanel panel : panels) {
-			if (panel.getBounds().contains(mouseX, mouseY) && panel.isVisible()) {
-				return panel;
-			}
-		}
-		return null;
-	}
+    public static @Nullable SidebarPanel getHoveredPanel(int mouseX, int mouseY) {
+        for (SidebarPanel panel : panels) {
+            if (panel.getBounds().contains(mouseX, mouseY) && panel.isVisible()) {
+                return panel;
+            }
+        }
+        return null;
+    }
 
-	public static @Nullable ScreenSpace getHoveredSpace(int mouseX, int mouseY) {
-		SidebarPanel panel = getHoveredPanel(mouseX, mouseY);
-		if (panel != null) {
-			return panel.getHoveredSpace(mouseX, mouseY);
-		}
-		return null;
-	}
+    public static @Nullable ScreenSpace getHoveredSpace(int mouseX, int mouseY) {
+        SidebarPanel panel = getHoveredPanel(mouseX, mouseY);
+        if (panel != null) {
+            return panel.getHoveredSpace(mouseX, mouseY);
+        }
+        return null;
+    }
 
-	public static boolean hasSidebarVisible(SidebarType type) {
-		for (SidebarPanel panel : panels) {
-			for (ScreenSpace space : panel.getSpaces()) {
-				if (type == space.getType()) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
+    public static boolean hasSidebarVisible(SidebarType type) {
+        for (SidebarPanel panel : panels) {
+            for (ScreenSpace space : panel.getSpaces()) {
+                if (type == space.getType()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-	public static boolean hasSidebarAvailable(SidebarType type) {
-		for (SidebarPanel panel : panels) {
-			if (panel.supportsType(type)) {
-				return true;
-			}
-		}
-		return false;
-	}
+    public static boolean hasSidebarAvailable(SidebarType type) {
+        for (SidebarPanel panel : panels) {
+            if (panel.supportsType(type)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	public static void repopulatePanels(SidebarType type) {
-		for (SidebarPanel panel : panels) {
-			for (ScreenSpace space : panel.getSpaces()) {
-				if (space.getType() == type) {
-					space.batcher.repopulate();
-				}
-			}
-		}
-	}
+    public static void repopulatePanels(SidebarType type) {
+        for (SidebarPanel panel : panels) {
+            for (ScreenSpace space : panel.getSpaces()) {
+                if (space.getType() == type) {
+                    space.batcher.repopulate();
+                }
+            }
+        }
+    }
 
-	public static SidebarPanel getSearchPanel() {
-		for (SidebarPanel panel : panels) {
-			if (panel.isSearch()) {
-				return panel;
-			}
-		}
-		return null;
-	}
+    public static SidebarPanel getSearchPanel() {
+        for (SidebarPanel panel : panels) {
+            if (panel.isSearch()) {
+                return panel;
+            }
+        }
+        return null;
+    }
 
-	public static void toggleSidebarType(SidebarType type) {
-		boolean visible = false;
-		for (SidebarPanel panel : panels) {
-			if (panel.getType() == type) {
-				visible = true;
-				panel.cycleType(1);
-			}
-		}
-		if (!visible) {
-			focusSidebarType(type);
-		}
-	}
+    public static void toggleSidebarType(SidebarType type) {
+        boolean visible = false;
+        for (SidebarPanel panel : panels) {
+            if (panel.getType() == type) {
+                visible = true;
+                panel.cycleType(1);
+            }
+        }
+        if (!visible) {
+            focusSidebarType(type);
+        }
+    }
 
-	public static List<? extends EmiIngredient> getSearchSource() {
-		SidebarPanel search = getSearchPanel();
-		if (search == null) {
-			return com.rewindmc.retroemi.shim.java.List.of();
-		}
-		return EmiSidebars.getStacks(search.getType());
-	}
+    public static List<? extends EmiIngredient> getSearchSource() {
+        SidebarPanel search = getSearchPanel();
+        if (search == null) {
+            return com.rewindmc.retroemi.shim.java.List.of();
+        }
+        return EmiSidebars.getStacks(search.getType());
+    }
 
-	public static EmiStackInteraction getHoveredStack(int mouseX, int mouseY, boolean notClick) {
-		return getHoveredStack(mouseX, mouseY, notClick, false);
-	}
+    public static EmiStackInteraction getHoveredStack(int mouseX, int mouseY, boolean notClick) {
+        return getHoveredStack(mouseX, mouseY, notClick, false);
+    }
 
-	public static int getDebugTextX() {
-		int x = 4;
-		if (emi.visible) {
-			x = Math.max(4, 4 + 22);
-		}
-		if (tree.visible) {
-			x = Math.max(4, 4 + 22 + 22);
-		}
-        if (nemi.visible) {
-			x = Math.max(4, 4 + 22 * 3);
-		}
-		return x;
-	}
+    public static int getDebugTextX() {
+        int x = 4;
+        if (emi.visible) {
+            x = Math.max(4, 4 + 22);
+        }
+        if (tree.visible) {
+            x = Math.max(4, 4 + 22 + 22);
+        }
+/*        if (nemi.visible) {
+            x = Math.max(4, 4 + 22 * 3);
+        }*/
+        return x;
+    }
 
-	public static EmiStackInteraction getHoveredStack(int mouseX, int mouseY, boolean notClick,
-			boolean ignoreLastHoveredCraftable) {
-		if (client.currentScreen == null) {
-			return EmiStackInteraction.EMPTY;
-		}
-		EmiStackInteraction stack = EmiStackProviders.getStackAt(client.currentScreen, mouseX, mouseY, notClick);
-		if (!stack.isEmpty()) {
-			return stack;
-		}
-		if (!ignoreLastHoveredCraftable) {
-			if (lastHoveredCraftable != null) {
-				if (lastHoveredCraftable.getRecipeContext() == null
-						|| (!lastHoveredCraftableSturdy && lastPlayerInventory != null &&
-							!lastPlayerInventory.canCraft(lastHoveredCraftable.getRecipeContext()))) {
-					lastHoveredCraftable = null;
-				} else {
-					return lastHoveredCraftable;
-				}
-			}
-		}
-		for (SidebarPanel panel : panels) {
-			for (ScreenSpace space : panel.getSpaces()) {
-				if (panel.isVisible() && space.pageSize > 0 && space.contains(mouseX, mouseY)
-						&& mouseX >= space.tx && mouseY >= space.ty) {
-					int x = (mouseX - space.tx) / ENTRY_SIZE;
-					int y = (mouseY - space.ty) / ENTRY_SIZE;
-					int n = space.getRawOffset(x, y);
-					if (n >= 0 && space == panel.space) {
-						n += space.pageSize * panel.page;
-					}
-					if (n >= 0 && n < space.getStacks().size()) {
-						EmiIngredient hovered = space.getStacks().get(n);
-						if (hovered instanceof EmiFavorite fav) {
-							return new SidebarEmiStackInteraction(hovered, space, fav.getRecipe(), true);
-						}
-						return new SidebarEmiStackInteraction(hovered, space);
-					}
-				}
-			}
-		}
-		if (lastStackTooltipRendered != null && notClick) {
-			return new EmiStackInteraction(EmiStack.of(lastStackTooltipRendered));
-		}
-		return EmiStackInteraction.EMPTY;
-	}
+    public static EmiStackInteraction getHoveredStack(int mouseX, int mouseY, boolean notClick,
+                                                      boolean ignoreLastHoveredCraftable) {
+        if (client.currentScreen == null) {
+            return EmiStackInteraction.EMPTY;
+        }
+        EmiStackInteraction stack = EmiStackProviders.getStackAt(client.currentScreen, mouseX, mouseY, notClick);
+        if (!stack.isEmpty()) {
+            return stack;
+        }
+        if (!ignoreLastHoveredCraftable) {
+            if (lastHoveredCraftable != null) {
+                if (lastHoveredCraftable.getRecipeContext() == null
+                        || (!lastHoveredCraftableSturdy && lastPlayerInventory != null &&
+                        !lastPlayerInventory.canCraft(lastHoveredCraftable.getRecipeContext()))) {
+                    lastHoveredCraftable = null;
+                } else {
+                    return lastHoveredCraftable;
+                }
+            }
+        }
+        for (SidebarPanel panel : panels) {
+            for (ScreenSpace space : panel.getSpaces()) {
+                if (panel.isVisible() && space.pageSize > 0 && space.contains(mouseX, mouseY)
+                        && mouseX >= space.tx && mouseY >= space.ty) {
+                    int x = (mouseX - space.tx) / ENTRY_SIZE;
+                    int y = (mouseY - space.ty) / ENTRY_SIZE;
+                    int n = space.getRawOffset(x, y);
+                    if (n >= 0 && space == panel.space) {
+                        n += space.pageSize * panel.page;
+                    }
+                    if (n >= 0 && n < space.getStacks().size()) {
+                        EmiIngredient hovered = space.getStacks().get(n);
+                        if (hovered instanceof EmiFavorite fav) {
+                            return new SidebarEmiStackInteraction(hovered, space, fav.getRecipe(), true);
+                        }
+                        return new SidebarEmiStackInteraction(hovered, space);
+                    }
+                }
+            }
+        }
+        if (lastStackTooltipRendered != null && notClick) {
+            return new EmiStackInteraction(EmiStack.of(lastStackTooltipRendered));
+        }
+        return EmiStackInteraction.EMPTY;
+    }
 
-	private static void updateMouse(int mouseX, int mouseY) {
-		if (lastHoveredCraftable != null) {
-			ScreenSpace space = getHoveredSpace(mouseX, mouseY);
-			if (space != null && (space.getType() == SidebarType.CRAFTABLES || space.getType() == SidebarType.CRAFT_HISTORY)) {
-				int offset = space.getRawOffsetFromMouse(mouseX, mouseY);
-				if (offset != lastHoveredCraftableOffset) {
-					lastHoveredCraftable = null;
-				}
-			} else {
-				lastHoveredCraftable = null;
-			}
-		}
-		lastMouseX = mouseX;
-		lastMouseY = mouseY;
-	}
+    private static void updateMouse(int mouseX, int mouseY) {
+        if (lastHoveredCraftable != null) {
+            ScreenSpace space = getHoveredSpace(mouseX, mouseY);
+            if (space != null && (space.getType() == SidebarType.CRAFTABLES || space.getType() == SidebarType.CRAFT_HISTORY)) {
+                int offset = space.getRawOffsetFromMouse(mouseX, mouseY);
+                if (offset != lastHoveredCraftableOffset) {
+                    lastHoveredCraftable = null;
+                }
+            } else {
+                lastHoveredCraftable = null;
+            }
+        }
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+    }
 
-	public static void drawBackground(EmiDrawContext context, int mouseX, int mouseY, float delta) {
-		updateMouse(mouseX, mouseY);
-		recalculate();
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (!base.isEmpty()) {
-			EmiProfiler.push("sidebar");
-			for (SidebarPanel panel : panels) {
-				panel.drawBackground(context, mouseX, mouseY, delta);
-			}
-		}
-	}
+    public static void drawBackground(EmiDrawContext context, int mouseX, int mouseY, float delta) {
+        updateMouse(mouseX, mouseY);
+        recalculate();
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (!base.isEmpty()) {
+            EmiProfiler.push("sidebar");
+            for (SidebarPanel panel : panels) {
+                panel.drawBackground(context, mouseX, mouseY, delta);
+            }
+        }
+    }
 
-	public static void render(EmiDrawContext context, int mouseX, int mouseY, float delta) {
-		EmiProfiler.push("emi");
-		updateMouse(mouseX, mouseY);
-		recalculate();
-		EmiScreenBase base = EmiScreenBase.getCurrent();
-		if (base.isEmpty()) {
-			EmiProfiler.pop();
-			return;
-		}
-		boolean visible = !isDisabled();
-		emi.visible = EmiConfig.emiConfigButtonVisibility.resolve(visible);
-		tree.visible = EmiConfig.recipeTreeButtonVisibility.resolve(visible);
-        nemi.visible = EmiConfig.emiConfigButtonVisibility.resolve(visible);
-		for (SidebarPanel panel : panels) {
-			panel.updateWidgetVisibility();
-		}
-		renderWidgets(context, mouseX, mouseY, delta, base);
-		if (isDisabled()) {
-			int screenHeight = base.screen().height;
-			if (!EmiReloadManager.isLoaded()) {
-				int reloadInfoX = getDebugTextX();
-				if (EmiReloadManager.getStatus() == -1) {
-					context.drawTextWithShadow(EmiPort.translatable("emi.reloading.error"), reloadInfoX, screenHeight - 16);
-				} else if (EmiReloadManager.getStatus() == 0) {
-					context.drawTextWithShadow(EmiPort.translatable("emi.reloading.waiting"), reloadInfoX, screenHeight - 16);
-				} else {
-					context.drawTextWithShadow(EmiPort.translatable("emi.reloading"), reloadInfoX, screenHeight - 16);
-					context.drawTextWithShadow(EmiReloadManager.reloadStep, reloadInfoX, screenHeight - 26);
-					if (System.currentTimeMillis() > EmiReloadManager.reloadWorry) {
-						context.drawTextWithShadow(EmiPort.translatable("emi.reloading.worry"), reloadInfoX, screenHeight - 36);
-					}
-				}
-			} else {
-			}
-			EmiProfiler.pop();
-			lastHoveredCraftable = null;
-			return;
-		} else if (EmiRecipes.activeWorker != null) {
-			int bakingX = getDebugTextX();
-			context.drawTextWithShadow(EmiPort.translatable("emi.reloading.still_baking_recipes"), bakingX, base.screen().height - 16);
-		} else {
-			renderDevMode(context, mouseX, mouseY, delta, base);
-		}
-		EmiProfiler.push("sidebars");
-		for (SidebarPanel panel : panels) {
-			panel.render(context, mouseX, mouseY, delta);
-		}
+    public static void render(EmiDrawContext context, int mouseX, int mouseY, float delta) {
+        EmiProfiler.push("emi");
+        updateMouse(mouseX, mouseY);
+        recalculate();
+        EmiScreenBase base = EmiScreenBase.getCurrent();
+        if (base.isEmpty()) {
+            EmiProfiler.pop();
+            return;
+        }
+        boolean visible = !isDisabled();
+        emi.visible = EmiConfig.emiConfigButtonVisibility.resolve(visible);
+        tree.visible = EmiConfig.recipeTreeButtonVisibility.resolve(visible);
+        //nemi.visible = EmiConfig.emiConfigButtonVisibility.resolve(visible);
+        for (SidebarPanel panel : panels) {
+            panel.updateWidgetVisibility();
+        }
+        renderWidgets(context, mouseX, mouseY, delta, base);
+        if (isDisabled()) {
+            int screenHeight = base.screen().height;
+            if (!EmiReloadManager.isLoaded()) {
+                int reloadInfoX = getDebugTextX();
+                if (EmiReloadManager.getStatus() == -1) {
+                    context.drawTextWithShadow(EmiPort.translatable("emi.reloading.error"), reloadInfoX, screenHeight - 16);
+                } else if (EmiReloadManager.getStatus() == 0) {
+                    context.drawTextWithShadow(EmiPort.translatable("emi.reloading.waiting"), reloadInfoX, screenHeight - 16);
+                } else {
+                    context.drawTextWithShadow(EmiPort.translatable("emi.reloading"), reloadInfoX, screenHeight - 16);
+                    context.drawTextWithShadow(EmiReloadManager.reloadStep, reloadInfoX, screenHeight - 26);
+                    if (System.currentTimeMillis() > EmiReloadManager.reloadWorry) {
+                        context.drawTextWithShadow(EmiPort.translatable("emi.reloading.worry"), reloadInfoX, screenHeight - 36);
+                    }
+                }
+            } else {
+            }
+            EmiProfiler.pop();
+            lastHoveredCraftable = null;
+            return;
+        } else if (EmiRecipes.activeWorker != null) {
+            int bakingX = getDebugTextX();
+            context.drawTextWithShadow(EmiPort.translatable("emi.reloading.still_baking_recipes"), bakingX, base.screen().height - 16);
+        } else {
+            renderDevMode(context, mouseX, mouseY, delta, base);
+        }
+        EmiProfiler.push("sidebars");
+        for (SidebarPanel panel : panels) {
+            panel.render(context, mouseX, mouseY, delta);
+        }
 
-		renderLastHoveredCraftable(context, mouseX, mouseY, delta, base);
+        renderLastHoveredCraftable(context, mouseX, mouseY, delta, base);
 
-		EmiProfiler.pop();
+        EmiProfiler.pop();
 
-		renderExclusionAreas(context, mouseX, mouseY, delta, base);
+        renderExclusionAreas(context, mouseX, mouseY, delta, base);
 
 //		EmiProfiler.swap("slots");
 //		renderSlotOverlays(context, mouseX, mouseY, delta, base);
@@ -1414,565 +1393,567 @@ public class EmiScreenManager {
 				client.thePlayer.inventory.setItemStack(null);
 				if (FMLCommonHandler.instance().getSide().isServer()) {
                     EmiNetwork.sendToServer(new CreateItemC2SPacket(1, null));
-				}
-				return true;
-			}
-		}
-		return false;
-	}
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 
-	public static class SidebarPanel {
-		public final SizedButtonWidget pageLeft, pageRight;
-		public final SidebarButtonWidget cycle;
-		public final SidebarPages pages;
-		public final SidebarSide side;
-		public List<ScreenSpace> spaces;
-		public ScreenSpace space;
-		public SidebarTheme theme;
-		public boolean header;
-		public int sidebarPage;
-		public int page;
+    public static class SidebarPanel {
+        public final SizedButtonWidget pageLeft, pageRight;
+        public final SidebarButtonWidget cycle;
+        public final SidebarPages pages;
+        public final SidebarSide side;
+        public List<ScreenSpace> spaces;
+        public ScreenSpace space;
+        public SidebarTheme theme;
+        public boolean header;
+        public int sidebarPage;
+        public int page;
 
-		public SidebarPanel(SidebarSide side, SidebarPages pages) {
-			this.side = side;
-			this.pages = pages;
-			pageLeft = new SizedButtonWidget(0, 0, 16, 16, 224, 0, this::hasMultiplePages, (w) -> scroll(-1));
-			pageRight = new SizedButtonWidget(0, 0, 16, 16, 240, 0, this::hasMultiplePages, (w) -> scroll(1));
-			cycle = new SidebarButtonWidget(0, 0, 16, 16, this);
-		}
+        public SidebarPanel(SidebarSide side, SidebarPages pages) {
+            this.side = side;
+            this.pages = pages;
+            pageLeft = new SizedButtonWidget(0, 0, 16, 16, 224, 0, this::hasMultiplePages, (w) -> scroll(-1));
+            pageRight = new SizedButtonWidget(0, 0, 16, 16, 240, 0, this::hasMultiplePages, (w) -> scroll(1));
+            cycle = new SidebarButtonWidget(0, 0, 16, 16, this);
+        }
 
-		public void setSpaces(ScreenSpace main, List<ScreenSpace> subpanels) {
-			space = main;
-			spaces = Stream.concat(Stream.of(main), subpanels.stream()).collect(Collectors.toList());
-		}
+        public void setSpaces(ScreenSpace main, List<ScreenSpace> subpanels) {
+            space = main;
+            spaces = Stream.concat(Stream.of(main), subpanels.stream()).collect(Collectors.toList());
+        }
 
-		public List<ScreenSpace> getSpaces() {
-			if (spaces == null) {
-				return com.rewindmc.retroemi.shim.java.List.of();
-			}
-			return spaces;
-		}
+        public List<ScreenSpace> getSpaces() {
+            if (spaces == null) {
+                return com.rewindmc.retroemi.shim.java.List.of();
+            }
+            return spaces;
+        }
 
-		public ScreenSpace getHoveredSpace(int mouseX, int mouseY) {
-			for (ScreenSpace space : getSpaces()) {
-				if (space.containsNotExcluded(mouseX, mouseY)) {
-					return space;
-				}
-			}
-			return null;
-		}
+        public ScreenSpace getHoveredSpace(int mouseX, int mouseY) {
+            for (ScreenSpace space : getSpaces()) {
+                if (space.containsNotExcluded(mouseX, mouseY)) {
+                    return space;
+                }
+            }
+            return null;
+        }
 
-		public SidebarType getType() {
-			if (sidebarPage >= 0 && sidebarPage < pages.pages.size()) {
-				return pages.pages.get(sidebarPage).type;
-			}
-			return SidebarType.NONE;
-		}
+        public SidebarType getType() {
+            if (sidebarPage >= 0 && sidebarPage < pages.pages.size()) {
+                return pages.pages.get(sidebarPage).type;
+            }
+            return SidebarType.NONE;
+        }
 
-		public boolean supportsType(SidebarType type) {
-			for (SidebarPages.SidebarPage page : pages.pages) {
-				if (page.type == type) {
-					return true;
-				}
-			}
-			return false;
-		}
+        public boolean supportsType(SidebarType type) {
+            for (SidebarPages.SidebarPage page : pages.pages) {
+                if (page.type == type) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
-		public void setSidebarPage(int page) {
-			if (page == sidebarPage) {
-				return;
-			}
-			boolean forceRecalculate = getType() == SidebarType.CHESS;
-			this.sidebarPage = page;
-			forceRecalculate |= getType() == SidebarType.CHESS;
-			if (forceRecalculate) {
-				if (client.currentScreen != null) {
-					// Force recalculation
-					lastWidth = -1;
-					recalculate();
-				}
-			}
-			if (isSearch()) {
-				EmiSearch.search(search.getText());
-			}
-			if (space != null) {
-				space.batcher.repopulate();
-			}
-		}
+        public void setSidebarPage(int page) {
+            if (page == sidebarPage) {
+                return;
+            }
+            boolean forceRecalculate = getType() == SidebarType.CHESS;
+            this.sidebarPage = page;
+            forceRecalculate |= getType() == SidebarType.CHESS;
+            if (forceRecalculate) {
+                if (client.currentScreen != null) {
+                    // Force recalculation
+                    lastWidth = -1;
+                    recalculate();
+                }
+            }
+            if (isSearch()) {
+                EmiSearch.search(search.getText());
+            }
+            if (space != null) {
+                space.batcher.repopulate();
+            }
+        }
 
-		public void setType(SidebarType type) {
-			for (int i = 0; i < pages.pages.size(); i++) {
-				SidebarPages.SidebarPage page = pages.pages.get(i);
-				if (page.type == type) {
-					setSidebarPage(i);
-				}
-			}
-		}
+        public void setType(SidebarType type) {
+            for (int i = 0; i < pages.pages.size(); i++) {
+                SidebarPages.SidebarPage page = pages.pages.get(i);
+                if (page.type == type) {
+                    setSidebarPage(i);
+                }
+            }
+        }
 
-		public void cycleType(int amount) {
-			int page = sidebarPage + amount;
-			if (page >= pages.pages.size()) {
-				page = 0;
-			} else if (page < 0) {
-				page = Math.max(pages.pages.size() - 1, 0);
-			}
-			setSidebarPage(page);
-		}
+        public void cycleType(int amount) {
+            int page = sidebarPage + amount;
+            if (page >= pages.pages.size()) {
+                page = 0;
+            } else if (page < 0) {
+                page = Math.max(pages.pages.size() - 1, 0);
+            }
+            setSidebarPage(page);
+        }
 
-		public void render(EmiDrawContext context, int mouseX, int mouseY, float delta) {
-			if (this.space == null) {
-				return;
-			}
-			try {
-				cycleType(0);
-				if (getType() == SidebarType.CHESS) {
-					EmiChess.get().update();
-					if (space.tw != 8 || space.th != 8) {
-						cycleType(1);
-					}
-				}
-				if (isVisible()) {
-					EmiProfiler.swap(side.getName());
-					context.push();
-					context.matrices().translate(0, 0, 100);
-					pageLeft.render(context.raw(), mouseX, mouseY, delta);
-					cycle.render(context.raw(), mouseX, mouseY, delta);
-					pageRight.render(context.raw(), mouseX, mouseY, delta);
-					context.pop();
-					int totalPages = (space.getStacks().size() - 1) / space.pageSize + 1;
-					wrapPage();
-					drawHeader(context, mouseX, mouseY, delta, page, totalPages);
-					for (ScreenSpace space : getSpaces()) {
-						if (space == this.space) {
-							space.render(context, mouseX, mouseY, delta, space.pageSize * page);
-						} else {
-							space.render(context, mouseX, mouseY, delta, 0);
-						}
-					}
-				}
-			} catch (Exception e) {
-				EmiLog.error("Error rendering sidebar", e);
-				drawError(context, mouseX, mouseY, delta);
-			}
-		}
+        public void render(EmiDrawContext context, int mouseX, int mouseY, float delta) {
+            if (this.space == null) {
+                return;
+            }
+            try {
+                cycleType(0);
+                if (getType() == SidebarType.CHESS) {
+                    EmiChess.get().update();
+                    if (space.tw != 8 || space.th != 8) {
+                        cycleType(1);
+                    }
+                }
+                if (isVisible()) {
+                    EmiProfiler.swap(side.getName());
+                    context.push();
+                    context.matrices().translate(0, 0, 100);
+                    pageLeft.render(context.raw(), mouseX, mouseY, delta);
+                    cycle.render(context.raw(), mouseX, mouseY, delta);
+                    pageRight.render(context.raw(), mouseX, mouseY, delta);
+                    context.pop();
+                    int totalPages = (space.getStacks().size() - 1) / space.pageSize + 1;
+                    wrapPage();
+                    drawHeader(context, mouseX, mouseY, delta, page, totalPages);
+                    for (ScreenSpace space : getSpaces()) {
+                        if (space == this.space) {
+                            space.render(context, mouseX, mouseY, delta, space.pageSize * page);
+                        } else {
+                            space.render(context, mouseX, mouseY, delta, 0);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                EmiLog.error("Error rendering sidebar", e);
+                drawError(context, mouseX, mouseY, delta);
+            }
+        }
 
-		private void drawBackground(EmiDrawContext context, int mouseX, int mouseY, float delta) {
-			if (this.space == null) {
-				return;
-			}
-			try {
-				cycleType(0);
-				if (getType() == SidebarType.CHESS) {
-					if (space.tw != 8 || space.th != 8) {
-						cycleType(1);
-					}
-				}
-				if (isVisible()) {
-					RenderSystem.enableDepthTest();
-					context.resetColor();
-					int headerOffset = header ? 18 : 0;
-					if (theme == SidebarTheme.VANILLA) {
-						int totalHeight = 18 + headerOffset;
-						for (ScreenSpace space : getSpaces()) {
-							totalHeight += space.th * ENTRY_SIZE + SUBPANEL_SEPARATOR_SIZE;
-						}
-						EmiRenderHelper.drawNinePatch(context, EmiRenderHelper.BACKGROUND, space.tx - 9, space.ty - 9 - headerOffset,
-							space.tw * ENTRY_SIZE + 18, totalHeight, 0, 32, 8, 1);
-					} else if (theme == SidebarTheme.MODERN) {
-						int offset = 2;
-						for (ScreenSpace space : getSpaces()) {
-							RenderSystem.enableBlend();
-							context.drawTexture(EmiRenderHelper.GRID, space.tx, space.ty, space.tw * ENTRY_SIZE,
-								space.th * ENTRY_SIZE, 0, 0, space.tw, space.th, 2, offset);
-							if (space.th % 2 == 1) {
-								offset *= -1;
-							}
-							RenderSystem.disableBlend();
-						}
-					}
-					for (ScreenSpace space : getSpaces()) {
-						if (space != this.space) {
-							context.drawTexture(EmiRenderHelper.DASH, space.tx + 1, space.ty - 2, space.tw * ENTRY_SIZE, 1, 0, 0, space.tw * ENTRY_SIZE, 1, 6, 1);
-						}
-					}
-				}
-			} catch (Exception e) {
-				EmiLog.error("Error rendering sidebar background", e);
-				drawError(context, mouseX, mouseY, delta);
-			}
-		}
+        private void drawBackground(EmiDrawContext context, int mouseX, int mouseY, float delta) {
+            if (this.space == null) {
+                return;
+            }
+            try {
+                cycleType(0);
+                if (getType() == SidebarType.CHESS) {
+                    if (space.tw != 8 || space.th != 8) {
+                        cycleType(1);
+                    }
+                }
+                if (isVisible()) {
+                    RenderSystem.enableDepthTest();
+                    context.resetColor();
+                    int headerOffset = header ? 18 : 0;
+                    if (theme == SidebarTheme.VANILLA) {
+                        int totalHeight = 18 + headerOffset;
+                        for (ScreenSpace space : getSpaces()) {
+                            totalHeight += space.th * ENTRY_SIZE + SUBPANEL_SEPARATOR_SIZE;
+                        }
+                        EmiRenderHelper.drawNinePatch(context, EmiRenderHelper.BACKGROUND, space.tx - 9, space.ty - 9 - headerOffset,
+                                space.tw * ENTRY_SIZE + 18, totalHeight, 0, 32, 8, 1);
+                    } else if (theme == SidebarTheme.MODERN) {
+                        int offset = 2;
+                        for (ScreenSpace space : getSpaces()) {
+                            RenderSystem.enableBlend();
+                            context.drawTexture(EmiRenderHelper.GRID, space.tx, space.ty, space.tw * ENTRY_SIZE,
+                                    space.th * ENTRY_SIZE, 0, 0, space.tw, space.th, 2, offset);
+                            if (space.th % 2 == 1) {
+                                offset *= -1;
+                            }
+                            RenderSystem.disableBlend();
+                        }
+                    }
+                    for (ScreenSpace space : getSpaces()) {
+                        if (space != this.space) {
+                            context.drawTexture(EmiRenderHelper.DASH, space.tx + 1, space.ty - 2, space.tw * ENTRY_SIZE, 1, 0, 0, space.tw * ENTRY_SIZE, 1, 6, 1);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                EmiLog.error("Error rendering sidebar background", e);
+                drawError(context, mouseX, mouseY, delta);
+            }
+        }
 
-		private void drawError(EmiDrawContext context, int mouseX, int mouseY, float delta) {
-			try {
-				Bounds bounds = getBounds();
-				int color = 0xFFFF0000;
-				int border = 4;
-				context.fill(bounds.left(), bounds.top(), bounds.width(), border, color);
-				context.fill(bounds.left(), bounds.bottom() - border, bounds.width(), border, color);
-				context.fill(bounds.left(), bounds.top(), border, bounds.height(), color);
-				context.fill(bounds.right() - border, bounds.top(), border, bounds.height(), color);
-				int cx = (bounds.left() + bounds.right()) / 2;
-				int cy = (bounds.top() + bounds.bottom()) / 2;
-				context.drawCenteredText(EmiPort.literal("Render Error"), cx, cy - 6, color);
-				context.drawCenteredText(EmiPort.literal("See Log"), cx, cy + 6, color);
-			} catch (Exception e) {
-				EmiLog.error("Critical error rendering sidebar", e);
-			}
-		}
+        private void drawError(EmiDrawContext context, int mouseX, int mouseY, float delta) {
+            try {
+                Bounds bounds = getBounds();
+                int color = 0xFFFF0000;
+                int border = 4;
+                context.fill(bounds.left(), bounds.top(), bounds.width(), border, color);
+                context.fill(bounds.left(), bounds.bottom() - border, bounds.width(), border, color);
+                context.fill(bounds.left(), bounds.top(), border, bounds.height(), color);
+                context.fill(bounds.right() - border, bounds.top(), border, bounds.height(), color);
+                int cx = (bounds.left() + bounds.right()) / 2;
+                int cy = (bounds.top() + bounds.bottom()) / 2;
+                context.drawCenteredText(EmiPort.literal("Render Error"), cx, cy - 6, color);
+                context.drawCenteredText(EmiPort.literal("See Log"), cx, cy + 6, color);
+            } catch (Exception e) {
+                EmiLog.error("Critical error rendering sidebar", e);
+            }
+        }
 
-		private void drawHeader(EmiDrawContext context, int mouseX, int mouseY, float delta, int page, int totalPages) {
-			if (header) {
-				Text text = EmiRenderHelper.getPageText(page + 1, totalPages, (space.tw - 3) * ENTRY_SIZE);
-				int x = space.tx + (space.tw * ENTRY_SIZE) / 2;
-				int maxLeft = (space.tw - 2) * ENTRY_SIZE / 2 - ENTRY_SIZE;
-				int w = client.fontRenderer.getStringWidth(text.asString()) / 2;
-				if (w > maxLeft) {
-					x += (w - maxLeft);
-				}
-				context.drawCenteredText(text, x, space.ty - 15);
-				if (totalPages > 1 && space.tw > 2) {
-					int scrollLeft = space.tx + 18;
-					int scrollWidth = space.tw * ENTRY_SIZE - 36;
-					int scrollY = space.ty - 4;
-					context.fill(scrollLeft, scrollY, scrollWidth, 2, 0x55555555);
-					EmiRenderHelper.drawScroll(context, scrollLeft, scrollY, scrollWidth, 2, page, totalPages, 0xFFFFFFFF);
-				}
-			}
-		}
+        private void drawHeader(EmiDrawContext context, int mouseX, int mouseY, float delta, int page, int totalPages) {
+            if (header) {
+                Text text = EmiRenderHelper.getPageText(page + 1, totalPages, (space.tw - 3) * ENTRY_SIZE);
+                int x = space.tx + (space.tw * ENTRY_SIZE) / 2;
+                int maxLeft = (space.tw - 2) * ENTRY_SIZE / 2 - ENTRY_SIZE;
+                int w = client.fontRenderer.getStringWidth(text.asString()) / 2;
+                if (w > maxLeft) {
+                    x += (w - maxLeft);
+                }
+                context.drawCenteredText(text, x, space.ty - 15);
+                if (totalPages > 1 && space.tw > 2) {
+                    int scrollLeft = space.tx + 18;
+                    int scrollWidth = space.tw * ENTRY_SIZE - 36;
+                    int scrollY = space.ty - 4;
+                    context.fill(scrollLeft, scrollY, scrollWidth, 2, 0x55555555);
+                    EmiRenderHelper.drawScroll(context, scrollLeft, scrollY, scrollWidth, 2, page, totalPages, 0xFFFFFFFF);
+                }
+            }
+        }
 
-		private void wrapPage() {
-			int totalPages = (space.getStacks().size() - 1) / space.pageSize + 1;
-			if (page >= totalPages) {
-				page = 0;
-				space.batcher.repopulate();
-			} else if (page < 0) {
-				page = totalPages - 1;
-				space.batcher.repopulate();
-			}
-		}
+        private void wrapPage() {
+            int totalPages = (space.getStacks().size() - 1) / space.pageSize + 1;
+            if (page >= totalPages) {
+                page = 0;
+                space.batcher.repopulate();
+            } else if (page < 0) {
+                page = totalPages - 1;
+                space.batcher.repopulate();
+            }
+        }
 
-		public boolean isSearch() {
-			return side == EmiConfig.searchSidebar;
-		}
+        public boolean isSearch() {
+            return side == EmiConfig.searchSidebar;
+        }
 
-		public void updateWidgetPosition() {
-			if (this.space == null) {
-				return;
-			}
-			pageLeft.x = space.tx;
-			pageLeft.y = space.ty - 18;
-			pageRight.x = space.tx + space.tw * ENTRY_SIZE - 16;
-			pageRight.y = pageLeft.y;
-			cycle.x = space.tx + 18;
-			cycle.y = pageLeft.y - 1;
-		}
+        public void updateWidgetPosition() {
+            if (this.space == null) {
+                return;
+            }
+            pageLeft.x = space.tx;
+            pageLeft.y = space.ty - 18;
+            pageRight.x = space.tx + space.tw * ENTRY_SIZE - 16;
+            pageRight.y = pageLeft.y;
+            cycle.x = space.tx + 18;
+            cycle.y = pageLeft.y - 1;
+        }
 
-		public boolean isVisible() {
-			if (this.space == null) {
-				return false;
-			}
-			if (getType() == SidebarType.CHESS && (space.tw != 8 || space.th != 8)) {
-				return false;
-			}
-			return !isDisabled() && space.pageSize > 0 && pages.pages.size() > 0;
-		}
+        public boolean isVisible() {
+            if (this.space == null) {
+                return false;
+            }
+            if (getType() == SidebarType.CHESS && (space.tw != 8 || space.th != 8)) {
+                return false;
+            }
+            return !isDisabled() && space.pageSize > 0 && pages.pages.size() > 0;
+        }
 
-		public void updateWidgetVisibility() {
-			boolean visible = header && isVisible();
+        public void updateWidgetVisibility() {
+            boolean visible = header && isVisible();
 
-			pageLeft.visible = visible;
-			cycle.visible = visible;
-			pageRight.visible = visible;
-		}
+            pageLeft.visible = visible;
+            cycle.visible = visible;
+            pageRight.visible = visible;
+        }
 
-		public boolean hasMultiplePages() {
-			return space != null && space.getStacks().size() > space.pageSize;
-		}
+        public boolean hasMultiplePages() {
+            return space != null && space.getStacks().size() > space.pageSize;
+        }
 
-		public void scroll(int delta) {
-			if (this.space == null) {
-				return;
-			}
-			if (space.pageSize == 0) {
-				return;
-			}
-			page += delta;
-			int pageSize = space.pageSize;
-			int totalPages = (space.getStacks().size() - 1) / pageSize + 1;
-			if (totalPages <= 1) {
-				return;
-			}
-			if (page >= totalPages) {
-				page = 0;
-			} else if (page < 0) {
-				page = totalPages - 1;
-			}
-			space.batcher.repopulate();
-		}
+        public void scroll(int delta) {
+            if (this.space == null) {
+                return;
+            }
+            if (space.pageSize == 0) {
+                return;
+            }
+            page += delta;
+            int pageSize = space.pageSize;
+            int totalPages = (space.getStacks().size() - 1) / pageSize + 1;
+            if (totalPages <= 1) {
+                return;
+            }
+            if (page >= totalPages) {
+                page = 0;
+            } else if (page < 0) {
+                page = totalPages - 1;
+            }
+            space.batcher.repopulate();
+        }
 
-		public Bounds getBounds() {
-			List<ScreenSpace> spaces = getSpaces();
-			if (this.space == null || spaces.isEmpty()) {
-				return Bounds.EMPTY;
-			}
-			int headerOffset = (header ? 18 : 0);
-			ScreenSpace end = getSpaces().get(getSpaces().size() - 1);
-			return new Bounds(
-					space.tx - theme.horizontalPadding,
-					space.ty - theme.verticalPadding - headerOffset,
-					space.tw * ENTRY_SIZE + theme.horizontalPadding * 2,
-					(end.ty - space.ty) + end.th * ENTRY_SIZE + theme.verticalPadding * 2 + headerOffset);
-		}
-	}
+        public Bounds getBounds() {
+            List<ScreenSpace> spaces = getSpaces();
+            if (this.space == null || spaces.isEmpty()) {
+                return Bounds.EMPTY;
+            }
+            int headerOffset = (header ? 18 : 0);
+            ScreenSpace end = getSpaces().get(getSpaces().size() - 1);
+            return new Bounds(
+                    space.tx - theme.horizontalPadding,
+                    space.ty - theme.verticalPadding - headerOffset,
+                    space.tw * ENTRY_SIZE + theme.horizontalPadding * 2,
+                    (end.ty - space.ty) + end.th * ENTRY_SIZE + theme.verticalPadding * 2 + headerOffset);
+        }
+    }
 
-	public static class ScreenSpace {
-		public final StackBatcher batcher = new StackBatcher();
-		private final Supplier<SidebarType> typeSupplier;
-		public final int tx, ty, tw, th;
-		public final int pageSize;
-		public final boolean rtl;
-		public final int[] widths;
-		public final boolean search;
+    public static class ScreenSpace {
+        public final StackBatcher batcher = new StackBatcher();
+        private final Supplier<SidebarType> typeSupplier;
+        public final int tx, ty, tw, th;
+        public final int pageSize;
+        public final boolean rtl;
+        public final int[] widths;
+        public final boolean search;
 
-		public ScreenSpace(int tx, int ty, int tw, int th, boolean rtl, List<Bounds> exclusion, Supplier<SidebarType> typeSupplier, boolean search) {
-			this.tx = tx;
-			this.ty = ty;
-			this.tw = tw;
-			this.th = th;
-			this.rtl = rtl;
-			this.typeSupplier = typeSupplier;
-			this.search = search;
-			int[] widths = new int[th];
-			int pageSize = 0;
-			for (int y = 0; y < th; y++) {
-				int width = 0;
-				int cy = ty + y * ENTRY_SIZE;
-				outer: for (int x = 0; x < tw; x++) {
-					int cx = tx + (rtl ? (tw - 1 - x) : x) * ENTRY_SIZE;
-					int rx = cx + ENTRY_SIZE - 1;
-					int ry = cy + ENTRY_SIZE - 1;
-					for (Bounds rect : exclusion) {
-						if (rect.contains(cx, cy) || rect.contains(rx, cy) || rect.contains(cx, ry)
-								|| rect.contains(rx, ry)) {
-							break outer;
-						}
-					}
-					width++;
-				}
-				widths[y] = width;
-				pageSize += width;
-			}
-			this.pageSize = pageSize;
-			this.widths = widths;
-		}
+        public ScreenSpace(int tx, int ty, int tw, int th, boolean rtl, List<Bounds> exclusion, Supplier<SidebarType> typeSupplier, boolean search) {
+            this.tx = tx;
+            this.ty = ty;
+            this.tw = tw;
+            this.th = th;
+            this.rtl = rtl;
+            this.typeSupplier = typeSupplier;
+            this.search = search;
+            int[] widths = new int[th];
+            int pageSize = 0;
+            for (int y = 0; y < th; y++) {
+                int width = 0;
+                int cy = ty + y * ENTRY_SIZE;
+                outer:
+                for (int x = 0; x < tw; x++) {
+                    int cx = tx + (rtl ? (tw - 1 - x) : x) * ENTRY_SIZE;
+                    int rx = cx + ENTRY_SIZE - 1;
+                    int ry = cy + ENTRY_SIZE - 1;
+                    for (Bounds rect : exclusion) {
+                        if (rect.contains(cx, cy) || rect.contains(rx, cy) || rect.contains(cx, ry)
+                                || rect.contains(rx, ry)) {
+                            break outer;
+                        }
+                    }
+                    width++;
+                }
+                widths[y] = width;
+                pageSize += width;
+            }
+            this.pageSize = pageSize;
+            this.widths = widths;
+        }
 
-		public List<? extends EmiIngredient> getStacks() {
-			if (search && getType() != SidebarType.CHESS) {
-				return searchedStacks;
-			} else {
-				return EmiSidebars.getStacks(getType());
-			}
-		}
+        public List<? extends EmiIngredient> getStacks() {
+            if (search && getType() != SidebarType.CHESS) {
+                return searchedStacks;
+            } else {
+                return EmiSidebars.getStacks(getType());
+            }
+        }
 
-		public List<? extends EmiIngredient> getPage(int page) {
-			List<? extends EmiIngredient> stacks = getStacks();
-			int start = page * pageSize;
-			int end = Math.min(start + pageSize, stacks.size());
-			if (end > start) {
-				return stacks.subList(start, end);
-			}
-			return com.rewindmc.retroemi.shim.java.List.of();
-		}
+        public List<? extends EmiIngredient> getPage(int page) {
+            List<? extends EmiIngredient> stacks = getStacks();
+            int start = page * pageSize;
+            int end = Math.min(start + pageSize, stacks.size());
+            if (end > start) {
+                return stacks.subList(start, end);
+            }
+            return com.rewindmc.retroemi.shim.java.List.of();
+        }
 
-		public SidebarType getType() {
-			return typeSupplier.get();
-		}
+        public SidebarType getType() {
+            return typeSupplier.get();
+        }
 
-		public void render(EmiDrawContext context, int mouseX, int mouseY, float delta, int startIndex) {
-			if (this.pageSize > 0) {
-				RenderSystem.enableDepthTest();
-				EmiPort.setPositionTexShader();
-				context.setColor(1.0F, 1.0F, 1.0F, 1.0F);
-				int hx = -1, hy = -1;
-				batcher.begin(0, 0, 0);
-				int i = startIndex;
-				List<? extends EmiIngredient> stacks = getStacks();
-				int hovered = this.getRawOffsetFromMouse(mouseX, mouseY);
-				if (hovered != -1 && EmiConfig.showHoverOverlay && startIndex + hovered < stacks.size()) {
-					hx = this.getRawX(hovered);
-					hy = this.getRawY(hovered);
-					EmiRenderHelper.drawSlotHightlight(context, hx, hy, ENTRY_SIZE, ENTRY_SIZE);
-				}
-				context.push();
-				outer: for (int yo = 0; yo < this.th; yo++) {
-					for (int xo = 0; xo < this.getWidth(yo); xo++) {
-						if (i >= stacks.size()) {
-							break outer;
-						}
-						int cx = this.getX(xo, yo);
-						int cy = this.getY(xo, yo);
-						EmiIngredient stack = stacks.get(i++);
-						batcher.render(stack, context.raw(), cx + 1, cy + 1, delta);
-						if (getType() == SidebarType.INDEX) {
-							if (EmiConfig.editMode && EmiHidden.isHidden(stack)) {
-								RenderSystem.enableDepthTest();
-								context.fill(cx, cy, ENTRY_SIZE, ENTRY_SIZE, 0x33ff0000);
-							} else if (EmiConfig.highlightDefaulted && BoM.getRecipe(stack) != null) {
-								RenderSystem.enableDepthTest();
-								context.fill(cx, cy, ENTRY_SIZE, ENTRY_SIZE, 0x3300ff00);
-							}
-						}
-					}
-				}
-				batcher.draw();
-				context.pop();
-			}
-		}
+        public void render(EmiDrawContext context, int mouseX, int mouseY, float delta, int startIndex) {
+            if (this.pageSize > 0) {
+                RenderSystem.enableDepthTest();
+                EmiPort.setPositionTexShader();
+                context.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+                int hx = -1, hy = -1;
+                batcher.begin(0, 0, 0);
+                int i = startIndex;
+                List<? extends EmiIngredient> stacks = getStacks();
+                int hovered = this.getRawOffsetFromMouse(mouseX, mouseY);
+                if (hovered != -1 && EmiConfig.showHoverOverlay && startIndex + hovered < stacks.size()) {
+                    hx = this.getRawX(hovered);
+                    hy = this.getRawY(hovered);
+                    EmiRenderHelper.drawSlotHightlight(context, hx, hy, ENTRY_SIZE, ENTRY_SIZE);
+                }
+                context.push();
+                outer:
+                for (int yo = 0; yo < this.th; yo++) {
+                    for (int xo = 0; xo < this.getWidth(yo); xo++) {
+                        if (i >= stacks.size()) {
+                            break outer;
+                        }
+                        int cx = this.getX(xo, yo);
+                        int cy = this.getY(xo, yo);
+                        EmiIngredient stack = stacks.get(i++);
+                        batcher.render(stack, context.raw(), cx + 1, cy + 1, delta);
+                        if (getType() == SidebarType.INDEX) {
+                            if (EmiConfig.editMode && EmiHidden.isHidden(stack)) {
+                                RenderSystem.enableDepthTest();
+                                context.fill(cx, cy, ENTRY_SIZE, ENTRY_SIZE, 0x33ff0000);
+                            } else if (EmiConfig.highlightDefaulted && BoM.getRecipe(stack) != null) {
+                                RenderSystem.enableDepthTest();
+                                context.fill(cx, cy, ENTRY_SIZE, ENTRY_SIZE, 0x3300ff00);
+                            }
+                        }
+                    }
+                }
+                batcher.draw();
+                context.pop();
+            }
+        }
 
-		public int getWidth(int y) {
-			return widths[y];
-		}
+        public int getWidth(int y) {
+            return widths[y];
+        }
 
-		public int getX(int x, int y) {
-			return tx + (rtl ? x + tw - getWidth(y) : x) * ENTRY_SIZE;
-		}
+        public int getX(int x, int y) {
+            return tx + (rtl ? x + tw - getWidth(y) : x) * ENTRY_SIZE;
+        }
 
-		public int getY(int x, int y) {
-			return ty + y * ENTRY_SIZE;
-		}
+        public int getY(int x, int y) {
+            return ty + y * ENTRY_SIZE;
+        }
 
-		public int getEdgeX(int off) {
-			int t = 0;
-			int y = 0;
-			while (y < th && t + getWidth(y) < off) {
-				t += getWidth(y++);
-			}
-			return getX(off - t, y);
-		}
+        public int getEdgeX(int off) {
+            int t = 0;
+            int y = 0;
+            while (y < th && t + getWidth(y) < off) {
+                t += getWidth(y++);
+            }
+            return getX(off - t, y);
+        }
 
-		public int getEdgeY(int off) {
-			int t = 0;
-			int y = 0;
-			while (y < th && t + getWidth(y) < off) {
-				t += getWidth(y++);
-			}
-			return ty + y * ENTRY_SIZE;
-		}
+        public int getEdgeY(int off) {
+            int t = 0;
+            int y = 0;
+            while (y < th && t + getWidth(y) < off) {
+                t += getWidth(y++);
+            }
+            return ty + y * ENTRY_SIZE;
+        }
 
-		public int getRawX(int off) {
-			int t = 0;
-			int y = 0;
-			while (y < th && t + getWidth(y) <= off) {
-				t += getWidth(y++);
-			}
-			return getX(off - t, y);
-		}
+        public int getRawX(int off) {
+            int t = 0;
+            int y = 0;
+            while (y < th && t + getWidth(y) <= off) {
+                t += getWidth(y++);
+            }
+            return getX(off - t, y);
+        }
 
-		public int getRawY(int off) {
-			int t = 0;
-			int y = 0;
-			while (y < th && t + getWidth(y) <= off) {
-				t += getWidth(y++);
-			}
-			return ty + y * ENTRY_SIZE;
-		}
+        public int getRawY(int off) {
+            int t = 0;
+            int y = 0;
+            while (y < th && t + getWidth(y) <= off) {
+                t += getWidth(y++);
+            }
+            return ty + y * ENTRY_SIZE;
+        }
 
-		public int getClosestEdge(int x, int y) {
-			if (y < ty) {
-				return 0;
-			} else if (y >= ty + th * ENTRY_SIZE) {
-				return pageSize;
-			} else {
-				x = (x - tx) / ENTRY_SIZE;
-				y = (y - ty) / ENTRY_SIZE;
-				int off = 0;
-				for (int i = 0; i < y; i++) {
-					off += widths[i];
-				}
-				if (x < 0) {
-					return y;
-				} else if (x >= widths[y]) {
-					return y + widths[y];
-				}
-				if (rtl) {
-					int to = tw - widths[y];
-					if (x >= to) {
-						off += x - to;
-					}
-				} else {
-					if (x < widths[y]) {
-						off += x;
-					} else {
-						off += widths[y];
-					}
-				}
-				return off;
-			}
-		}
+        public int getClosestEdge(int x, int y) {
+            if (y < ty) {
+                return 0;
+            } else if (y >= ty + th * ENTRY_SIZE) {
+                return pageSize;
+            } else {
+                x = (x - tx) / ENTRY_SIZE;
+                y = (y - ty) / ENTRY_SIZE;
+                int off = 0;
+                for (int i = 0; i < y; i++) {
+                    off += widths[i];
+                }
+                if (x < 0) {
+                    return y;
+                } else if (x >= widths[y]) {
+                    return y + widths[y];
+                }
+                if (rtl) {
+                    int to = tw - widths[y];
+                    if (x >= to) {
+                        off += x - to;
+                    }
+                } else {
+                    if (x < widths[y]) {
+                        off += x;
+                    } else {
+                        off += widths[y];
+                    }
+                }
+                return off;
+            }
+        }
 
-		public int getRawOffsetFromMouse(int mouseX, int mouseY) {
-			if (mouseX < tx || mouseY < ty) {
-				return -1;
-			}
-			return getRawOffset((mouseX - tx) / ENTRY_SIZE, (mouseY - ty) / ENTRY_SIZE);
-		}
+        public int getRawOffsetFromMouse(int mouseX, int mouseY) {
+            if (mouseX < tx || mouseY < ty) {
+                return -1;
+            }
+            return getRawOffset((mouseX - tx) / ENTRY_SIZE, (mouseY - ty) / ENTRY_SIZE);
+        }
 
-		public int getRawOffset(int x, int y) {
-			if (x >= 0 && y >= 0 && x < tw && y < th) {
-				int off = 0;
-				for (int i = 0; i < y; i++) {
-					off += widths[i];
-				}
-				if (rtl) {
-					int to = tw - widths[y];
-					if (x >= to) {
-						return off + x - to;
-					}
-				} else {
-					if (x < widths[y]) {
-						return off + x;
-					}
-				}
-			}
-			return -1;
-		}
+        public int getRawOffset(int x, int y) {
+            if (x >= 0 && y >= 0 && x < tw && y < th) {
+                int off = 0;
+                for (int i = 0; i < y; i++) {
+                    off += widths[i];
+                }
+                if (rtl) {
+                    int to = tw - widths[y];
+                    if (x >= to) {
+                        return off + x - to;
+                    }
+                } else {
+                    if (x < widths[y]) {
+                        return off + x;
+                    }
+                }
+            }
+            return -1;
+        }
 
-		public boolean contains(int x, int y) {
-			return x >= tx && x < tx + tw * ENTRY_SIZE && y >= ty && y < ty + th * ENTRY_SIZE;
-		}
+        public boolean contains(int x, int y) {
+            return x >= tx && x < tx + tw * ENTRY_SIZE && y >= ty && y < ty + th * ENTRY_SIZE;
+        }
 
-		public boolean containsNotExcluded(int x, int y) {
-			EmiScreenBase base = EmiScreenBase.getCurrent();
-			if (base.isEmpty()) {
-				return false;
-			}
-			if (this.contains(lastMouseX, lastMouseY)) {
-				for (Bounds bounds : EmiExclusionAreas.getExclusion(base)) {
-					if (bounds.contains(x, y)) {
-						return false;
-					}
-				}
-				return true;
-			}
-			return false;
-		}
-	}
+        public boolean containsNotExcluded(int x, int y) {
+            EmiScreenBase base = EmiScreenBase.getCurrent();
+            if (base.isEmpty()) {
+                return false;
+            }
+            if (this.contains(lastMouseX, lastMouseY)) {
+                for (Bounds bounds : EmiExclusionAreas.getExclusion(base)) {
+                    if (bounds.contains(x, y)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+    }
 
-	public static class SidebarEmiStackInteraction extends EmiStackInteraction {
-		public final ScreenSpace space;
+    public static class SidebarEmiStackInteraction extends EmiStackInteraction {
+        public final ScreenSpace space;
 
-		public SidebarEmiStackInteraction(EmiIngredient stack, ScreenSpace space) {
-			super(stack);
-			this.space = space;
-		}
+        public SidebarEmiStackInteraction(EmiIngredient stack, ScreenSpace space) {
+            super(stack);
+            this.space = space;
+        }
 
-		public SidebarEmiStackInteraction(EmiIngredient stack, ScreenSpace space, EmiRecipe recipe, boolean clickable) {
-			super(stack, recipe, clickable);
-			this.space = space;
-		}
+        public SidebarEmiStackInteraction(EmiIngredient stack, ScreenSpace space, EmiRecipe recipe, boolean clickable) {
+            super(stack, recipe, clickable);
+            this.space = space;
+        }
 
-		public SidebarType getType() {
-			return space.getType();
-		}
-	}
+        public SidebarType getType() {
+            return space.getType();
+        }
+    }
 }

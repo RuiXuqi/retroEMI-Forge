@@ -19,31 +19,35 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.text.Text;
 import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GL11;
 import org.objectweb.asm.Opcodes;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.*;;
+import java.util.Collection;
+import java.util.Iterator;
 
 @Mixin(value = InventoryEffectRenderer.class, priority = 2000)
 public abstract class InventoryEffectRendererMixin extends GuiContainer {
-    @Shadow private boolean field_147045_u;
+    @Shadow
+    protected boolean hasActivePotionEffects;
 
-    @Unique private final int EFFECT_WIDTH = 124;
+    @Unique
+    private final int EFFECT_WIDTH = 124;
 
     public InventoryEffectRendererMixin(Container par1Container) {
         super(par1Container);
     }
 
-    @Redirect(method = "initGui",
-        at = @At(value = "FIELD",
-            target = "Lnet/minecraft/client/renderer/InventoryEffectRenderer;guiLeft:I",
-            opcode = Opcodes.PUTFIELD
-        )
+    @Redirect(method = "updateActivePotionEffects",
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/renderer/InventoryEffectRenderer;guiLeft:I",
+                    opcode = Opcodes.PUTFIELD
+            )
     )
     private void conNotBeyond(InventoryEffectRenderer inventoryEffectRenderer, int value) {
         guiLeft = Math.max(guiLeft, EFFECT_WIDTH);
@@ -52,7 +56,7 @@ public abstract class InventoryEffectRendererMixin extends GuiContainer {
     @Inject(method = "initGui", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/inventory/GuiContainer;initGui()V", shift = At.Shift.AFTER), cancellable = true)
     private void initGui(CallbackInfo ci) {
         if (EmiConfig.effectLocation == EffectLocation.TOP || EmiConfig.effectLocation == EffectLocation.HIDDEN) {
-            this.field_147045_u = false;
+            this.hasActivePotionEffects = false;
             ci.cancel();
         }
     }
@@ -65,12 +69,12 @@ public abstract class InventoryEffectRendererMixin extends GuiContainer {
         }
     }
 
-    @Inject(method = "func_147044_g", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "drawActivePotionEffects", at = @At("HEAD"), cancellable = true)
     private void displayDebuffEffects(CallbackInfo ci) {
         ci.cancel();
 
         Minecraft client = Minecraft.getMinecraft();
-        ScaledResolution scaledresolution = new ScaledResolution(client, client.displayWidth, client.displayHeight);
+        ScaledResolution scaledresolution = new ScaledResolution(client);
         int width = scaledresolution.getScaledWidth();
         int height = scaledresolution.getScaledHeight();
         int mouseX = Mouse.getX() * width / client.displayWidth;
@@ -78,7 +82,7 @@ public abstract class InventoryEffectRendererMixin extends GuiContainer {
         int debuffY = this.guiTop;
         int debuffX = changeEffectSpace(this.guiLeft - 124);
         boolean wide = !EmiConfig.effectLocation.compressed;
-        Collection<PotionEffect> activePotionEffects = this.mc.thePlayer.getActivePotionEffects();
+        Collection<PotionEffect> activePotionEffects = this.mc.player.getActivePotionEffects();
         int num_effects = activePotionEffects.size();
 
         if (num_effects > 0 && EmiConfig.effectLocation != EffectLocation.HIDDEN) {
@@ -96,7 +100,7 @@ public abstract class InventoryEffectRendererMixin extends GuiContainer {
             for (Iterator<PotionEffect> iterator = activePotionEffects.iterator(); iterator.hasNext(); debuffY += spacing) {
                 PotionEffect potionEffect = iterator.next();
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-                this.mc.getTextureManager().bindTexture(field_147001_a);
+                this.mc.getTextureManager().bindTexture(INVENTORY_BACKGROUND);
                 drawStatusEffectBackgrounds(debuffX, debuffY, wide);
 
                 int ew = wide ? 120 : 32;
@@ -116,7 +120,7 @@ public abstract class InventoryEffectRendererMixin extends GuiContainer {
     private void drawCenteredEffects(int mouseX, int mouseY) {
         EmiDrawContext context = EmiDrawContext.instance();
         context.resetColor();
-        Collection<PotionEffect> effects = mc.thePlayer.getActivePotionEffects();
+        Collection<PotionEffect> effects = mc.player.getActivePotionEffects();
         int size = effects.size();
         if (size == 0) {
             return;
@@ -147,7 +151,7 @@ public abstract class InventoryEffectRendererMixin extends GuiContainer {
                 context.resetColor();
                 RenderSystem.disableLighting();
                 RenderSystem.enableBlend();
-                this.mc.getTextureManager().bindTexture(field_147001_a);
+                this.mc.getTextureManager().bindTexture(INVENTORY_BACKGROUND);
                 drawStatusEffectBackgrounds(x, y, wide);
                 drawPotionIcon(x, y, inst);
                 if (mouseX >= x && mouseX < x + ew && mouseY >= y && mouseY < y + 32) {
@@ -170,7 +174,7 @@ public abstract class InventoryEffectRendererMixin extends GuiContainer {
         if (effect != null) {
             String amplifier = getPotionAmplifier(effect);
             TooltipComponent name = TooltipComponent.of(Text.translatable(effect.getEffectName()).append(Text.literal(amplifier)));
-            TooltipComponent duration = TooltipComponent.of(Text.literal(Potion.getDurationString(effect)));
+            TooltipComponent duration = TooltipComponent.of(Text.literal(Potion.getPotionDurationString(effect, 1.0F)));
             EmiRenderHelper.drawTooltip((InventoryEffectRenderer) (Object) this, EmiDrawContext.instance(), List.of(name, duration), mouseX, Math.max(mouseY, 16));
         }
     }
@@ -200,15 +204,15 @@ public abstract class InventoryEffectRendererMixin extends GuiContainer {
     private void drawStatusEffectDescriptions(int x, int y, PotionEffect potionEffect, boolean wide) {
         if (wide) {
             String potionName = RetroEMI.translate(potionEffect.getEffectName()) + getPotionAmplifier(potionEffect);
-            this.fontRendererObj.drawStringWithShadow(potionName, x + 10 + 18, y + 6, 16777215);
-            String durationString = Potion.getDurationString(potionEffect);
-            this.fontRendererObj.drawStringWithShadow(durationString, x + 10 + 18, y + 16, 8355711);
+            this.fontRenderer.drawStringWithShadow(potionName, x + 10 + 18, y + 6, 16777215);
+            String durationString = Potion.getPotionDurationString(potionEffect, 1.0F);
+            this.fontRenderer.drawStringWithShadow(durationString, x + 10 + 18, y + 16, 8355711);
         }
     }
 
     @Unique
     private void drawPotionIcon(int x, int y, PotionEffect potionEffect) {
-        Potion potionType = Potion.potionTypes[potionEffect.getPotionID()];
+        Potion potionType = potionEffect.getPotion();
         if (potionType.hasStatusIcon()) {
             int statusIconIndex = potionType.getStatusIconIndex();
             this.drawTexturedModalRect(x + 6, y + 7, statusIconIndex % 8 * 18, 198 + statusIconIndex / 8 * 18, 18, 18);

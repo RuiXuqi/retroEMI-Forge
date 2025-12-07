@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
 public class EmiShapelessOreRecipe extends EmiCraftingRecipe {
 
     public EmiShapelessOreRecipe(ShapelessOreRecipe recipe) {
-        super(recipe.getInput().stream().map(EmiShapedOreRecipe::fromOreInput).collect(Collectors.toList()),
-            EmiStack.of(recipe.getRecipeOutput()), EmiPort.getId(recipe));
+        super(recipe.getIngredients().stream().map(EmiShapedOreRecipe::fromOreInput).collect(Collectors.toList()),
+                EmiStack.of(recipe.getRecipeOutput()), EmiPort.getId(recipe));
         EmiShapedRecipe.setRemainders(input, recipe);
     }
 

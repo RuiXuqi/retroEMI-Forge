@@ -1,8 +1,9 @@
 package dev.emi.emi.mixin.early.minecraft.client;
 
+import com.rewindmc.retroemi.REMIMixinHooks;
+import dev.emi.emi.mixinsupport.inject_interface.EmiSearchInput;
 import dev.emi.emi.runtime.EmiDrawContext;
 import dev.emi.emi.screen.EmiScreenManager;
-import dev.emi.emi.mixinsupport.inject_interface.EmiSearchInput;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Container;
@@ -12,11 +13,11 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import com.rewindmc.retroemi.REMIMixinHooks;
 
 @Mixin(GuiContainer.class)
 public class GuiContainerMixin extends GuiScreen {
-    @Shadow public Container inventorySlots;
+    @Shadow
+    public Container inventorySlots;
 
     @Inject(method = "initGui", at = @At("TAIL"))
     private void addEMIWidgets(CallbackInfo ci) {
@@ -27,7 +28,7 @@ public class GuiContainerMixin extends GuiScreen {
             method = "drawScreen",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/inventory/GuiContainer;drawDefaultBackground()V",
+                    target = "Lnet/minecraft/client/gui/inventory/GuiContainer;drawGuiContainerBackgroundLayer(FII)V",
                     shift = At.Shift.AFTER
             ))
     private void renderEMIBackground(int mouseX, int mouseY, float delta, CallbackInfo ci) {
@@ -35,7 +36,7 @@ public class GuiContainerMixin extends GuiScreen {
         EmiScreenManager.drawBackground(context, mouseX, mouseY, delta);
     }
 
-    @Inject(method = "func_146977_a", at = @At(value = "RETURN"))
+    @Inject(method = "drawSlot", at = @At(value = "RETURN"))
     private void drawSlot(Slot slot, CallbackInfo ci) {
         REMIMixinHooks.drawSlot(slot);
     }

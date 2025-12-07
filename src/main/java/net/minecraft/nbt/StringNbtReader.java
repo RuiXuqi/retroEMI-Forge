@@ -1,3 +1,4 @@
+/*
 package net.minecraft.nbt;
 
 import net.minecraft.nbt.CompressedStreamTools;
@@ -22,3 +23,4 @@ public class StringNbtReader {
     }
 
 }
+*/

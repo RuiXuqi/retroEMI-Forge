@@ -10,12 +10,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GuiContainerCreative.class)
 public class GuiContainerCreativeMixin {
     @Inject(method = "handleMouseInput",
-        at = @At(
-            value = "INVOKE",
-            target = "Lorg/lwjgl/input/Mouse;getEventDWheel()I",
-            remap = false
-        ),
-        cancellable = true
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lorg/lwjgl/input/Mouse;getEventDWheel()I",
+                    remap = false
+            ),
+            cancellable = true
     )
     public void handleMouseInput(CallbackInfo ci) {
         if (((EmiSearchInput) this).getEMIMouseInput()) {

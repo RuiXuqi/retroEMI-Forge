@@ -1,65 +1,62 @@
 package dev.emi.emi.api.stack;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.jetbrains.annotations.ApiStatus;
-
-import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL12.GL_RESCALE_NORMAL;
-
 import com.google.common.collect.Lists;
-
 import com.mojang.blaze3d.systems.RenderSystem;
-
-import cpw.mods.fml.common.registry.GameData;
+import com.rewindmc.retroemi.ItemStacks;
+import com.rewindmc.retroemi.RetroEMI;
 import dev.emi.emi.EmiPort;
 import dev.emi.emi.EmiRenderHelper;
+import dev.emi.emi.api.render.EmiRender;
 import dev.emi.emi.config.EmiConfig;
 import dev.emi.emi.platform.EmiAgnos;
 import dev.emi.emi.runtime.EmiDrawContext;
 import dev.emi.emi.screen.StackBatcher;
-import dev.emi.emi.api.render.EmiRender;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.item.TooltipContext;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.tooltip.TooltipComponent;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.registry.tag.ItemKey;
-import net.minecraft.util.ResourceLocation;
-import com.rewindmc.retroemi.ItemStacks;
-import com.rewindmc.retroemi.RetroEMI;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.tooltip.TooltipComponent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.ResourceLocation;
+import org.jetbrains.annotations.ApiStatus;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL12.GL_RESCALE_NORMAL;
 
 @ApiStatus.Internal
 public class ItemEmiStack extends EmiStack implements StackBatcher.Batchable {
-	private static final Minecraft client = Minecraft.getMinecraft();
+    private static final Minecraft client = Minecraft.getMinecraft();
 
-	private final Item item;
-	private final int subtype;
+    private final Item item;
+    private final int subtype;
     private final NBTTagCompound componentChanges;
 
-	private boolean unbatchable;
+    private boolean unbatchable;
 
-	public ItemEmiStack(ItemStack stack) {
-		this(stack, stack.stackSize);
-	}
+    public ItemEmiStack(ItemStack stack) {
+        this(stack, stack.getCount());
+    }
 
-	public ItemEmiStack(ItemStack stack, long amount) {
-		this(stack.getItem(), stack.getTagCompound(), amount, stack.getItemDamage());
-	}
+    public ItemEmiStack(ItemStack stack, long amount) {
+        this(stack.getItem(), stack.getTagCompound(), amount, stack.getItemDamage());
+    }
 
-	public ItemEmiStack(Item item, NBTTagCompound components, long amount, int subtype) {
-		this.item = item;
-		this.componentChanges = components;
+    public ItemEmiStack(Item item, NBTTagCompound components, long amount, int subtype) {
+        this.item = item;
+        this.componentChanges = components;
         this.subtype = subtype;
-		this.amount = amount;
-	}
+        this.amount = amount;
+    }
 
     @Override
     public ItemStack getItemStack() {
@@ -109,7 +106,7 @@ public class ItemEmiStack extends EmiStack implements StackBatcher.Batchable {
 
     @Override
     public ResourceLocation getId() {
-        return EmiPort.id(EmiPort.getItemRegistry().getNameForObject(item));
+        return item.getRegistryName();
     }
 
     @Override
@@ -184,8 +181,8 @@ public class ItemEmiStack extends EmiStack implements StackBatcher.Batchable {
 
     @Override
     public List<Text> getTooltipText() {
-        return ((List<String>) getItemStack().getTooltip(client.thePlayer, TooltipContext.BASIC))
-            .stream().map(Text::literal).collect(Collectors.toList());
+        return ((List<String>) getItemStack().getTooltip(client.player, ITooltipFlag.TooltipFlags.NORMAL))
+                .stream().map(Text::literal).collect(Collectors.toList());
     }
 
     @Override
@@ -198,7 +195,7 @@ public class ItemEmiStack extends EmiStack implements StackBatcher.Batchable {
             //String mod = EmiUtil.getModName(namespace);
             //list.add(TooltipComponent.of(Text.literal(mod).formatted(Formatting.BLUE, Formatting.ITALIC)));
             if (EmiConfig.appendModId || EmiConfig.appendItemModId) {
-                String stackNamespace = GameData.getItemRegistry().getNameForObject(stack.getItem());
+                String stackNamespace = Objects.requireNonNull(stack.getItem().getRegistryName()).getNamespace();
                 String modNamespaceBase = stackNamespace.replaceAll(":.*", "");
                 String modNamespace = modNamespaceBase.substring(0, 1).toUpperCase() + modNamespaceBase.substring(1);
                 list.add(TooltipComponent.of(Text.literal(modNamespace).formatted(Formatting.BLUE, Formatting.ITALIC)));
@@ -213,14 +210,11 @@ public class ItemEmiStack extends EmiStack implements StackBatcher.Batchable {
         if (isEmpty()) {
             return EmiPort.literal("");
         }
-        return Text.translatable(getItemStack().getUnlocalizedName() + ".name");
+        return Text.translatable(getItemStack().getTranslationKey() + ".name");
     }
 
     @Override
     public int getSubtype() {
         return this.subtype;
     }
-
-	static class ItemEntry {
-	}
 }

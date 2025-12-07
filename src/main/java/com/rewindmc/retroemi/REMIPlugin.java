@@ -1,8 +1,6 @@
 package com.rewindmc.retroemi;
 
-import java.util.Map;
-import java.util.stream.Stream;
-
+import com.rewindmc.retroemi.integ.MiscPlugin;
 import dev.emi.emi.VanillaPlugin;
 import dev.emi.emi.api.EmiPlugin;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
@@ -10,10 +8,10 @@ import dev.emi.emi.api.render.EmiTexture;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.platform.EmiAgnos;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.CraftingManager;
-import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
-import com.rewindmc.retroemi.integ.MiscPlugin;
+
+import java.util.Map;
+import java.util.stream.Stream;
 
 public class REMIPlugin implements EmiMultiPlugin, Runnable {
 
@@ -27,7 +25,8 @@ public class REMIPlugin implements EmiMultiPlugin, Runnable {
     );
 
     @Override
-    public void run() {}
+    public void run() {
+    }
 
     @Override
     public Stream<EmiPlugin> getChildPlugins() {
@@ -47,11 +46,11 @@ public class REMIPlugin implements EmiMultiPlugin, Runnable {
                 new EmiTexture(new ResourceLocation("emi", "textures/simple_icons/" + id + ".png"), 0, 0, 16, 16, 16, 16, 16, 16));
     }
 
-    public static <T extends IRecipe> Iterable<T> recipesOfType(Class<T> clazz) {
+/*    public static <T extends IRecipe> Iterable<T> recipesOfType(Class<T> clazz) {
         return CraftingManager.getInstance().getRecipeList().stream()
                 .filter(clazz::isInstance)
                 .map(clazz::cast)::iterator;
-    }
+    }*/
 
 }
 

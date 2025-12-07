@@ -1,19 +1,13 @@
 package dev.emi.emi.platform.forge;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.rewindmc.retroemi.REMIMixinHooks;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import dev.emi.emi.EmiPort;
-import dev.emi.emi.mixin.accessor.GuiContainerAccessor;
 import dev.emi.emi.runtime.EmiDrawContext;
 import dev.emi.emi.screen.EmiScreenBase;
 import dev.emi.emi.screen.EmiScreenManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraftforge.client.event.GuiScreenEvent;
-import org.lwjgl.opengl.GL11;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class EmiClientForge {
 
@@ -52,14 +46,14 @@ public class EmiClientForge {
     @SubscribeEvent
     public void renderScreenForeground(GuiScreenEvent.DrawScreenEvent.Post event) {
         EmiDrawContext context = EmiDrawContext.instance();
-        if (event.gui instanceof GuiContainer screen) {
+        if (event.getGui() instanceof GuiContainer screen) {
             EmiScreenBase base = EmiScreenBase.of(screen);
             if (base != null) {
                 Minecraft client = Minecraft.getMinecraft();
                 context.push();
                 EmiPort.setPositionTexShader();
-                EmiScreenManager.render(context, event.mouseX, event.mouseY, client.timer.renderPartialTicks);
-                EmiScreenManager.drawForeground(context, event.mouseX, event.mouseY, client.timer.renderPartialTicks);
+                EmiScreenManager.render(context, event.getMouseX(), event.getMouseY(), client.getRenderPartialTicks());
+                EmiScreenManager.drawForeground(context, event.getMouseX(), event.getMouseY(), client.getRenderPartialTicks());
                 context.pop();
             }
         }

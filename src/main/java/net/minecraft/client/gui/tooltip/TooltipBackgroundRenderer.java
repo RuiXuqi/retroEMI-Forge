@@ -1,8 +1,8 @@
 package net.minecraft.client.gui.tooltip;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class TooltipBackgroundRenderer {
     public static final int field_41688 = 12;

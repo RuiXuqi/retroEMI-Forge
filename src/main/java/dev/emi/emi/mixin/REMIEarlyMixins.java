@@ -1,43 +1,21 @@
 package dev.emi.emi.mixin;
 
-import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
-import cpw.mods.fml.relauncher.FMLLaunchHandler;
-import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
-import dev.emi.emi.runtime.EmiLog;
+import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
+import zone.rong.mixinbooter.IEarlyMixinLoader;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @IFMLLoadingPlugin.Name("REMIEarlyMixins")
-@IFMLLoadingPlugin.MCVersion("1.7.10")
+@IFMLLoadingPlugin.MCVersion("1.12.2")
 public class REMIEarlyMixins implements IFMLLoadingPlugin, IEarlyMixinLoader {
 
     private String[] transformerClasses;
 
     @Override
-    public String getMixinConfig() {
-        return "mixins.emi.json";
-    }
-
-    @Override
-    public List<String> getMixins(Set<String> loadedCoreMods) {
-        List<String> mixins = new ArrayList<>();
-        if(!FMLLaunchHandler.side().isClient()) {
-            return mixins;
-        }
-
-        final List<String> notLoading = new ArrayList<>();
-        for (Mixins mixin : Mixins.values()) {
-            if (mixin.phase == Mixins.Phase.EARLY) {
-                if (mixin.shouldLoad(loadedCoreMods, Collections.emptySet())) {
-                    mixins.addAll(mixin.mixinClasses);
-                } else {
-                    notLoading.addAll(mixin.mixinClasses);
-                }
-            }
-        }
-        EmiLog.LOG.info("Not loading the following EARLY mixins: {}");
-
-        return mixins;
+    public List<String> getMixinConfigs() {
+        return Collections.singletonList("mixins.emi.early.json");
     }
 
     @Override

@@ -8,8 +8,8 @@ import java.util.List;
 @Desugar
 public record RecipeError(Severity severity, List<TooltipComponent> tooltip) {
 
-	public static enum Severity {
-		ERROR,
-		WARNING
-	}
+    public static enum Severity {
+        ERROR,
+        WARNING
+    }
 }

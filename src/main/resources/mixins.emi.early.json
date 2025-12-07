@@ -1,23 +1,29 @@
 {
-  "required": true,
-  "minVersion": "0.7.11",
   "package": "dev.emi.emi.mixin.early",
+  "required": true,
   "refmap": "mixins.emi.refmap.json",
   "target": "@env(DEFAULT)",
+  "minVersion": "0.8.5",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "accessor.InventoryCraftingAccessor",
+    "accessor.ItemToolAccessor",
+    "accessor.PlayerControllerMPAccessor",
+    "accessor.SlotCraftingAccessor",
     "forge.FluidMixin",
     "minecraft.item.ItemMixin",
     "minecraft.item.ItemStackMixin",
     "minecraft.packet.NetServerHandlerMixin"
   ],
+  "server": [],
   "client": [
+    "accessor.GuiContainerAccessor",
+    "accessor.GuiTextFieldAccessor",
     "minecraft.client.FontRendererMixin",
     "minecraft.client.GuiContainerCreativeMixin",
     "minecraft.client.GuiContainerMixin",
     "minecraft.client.GuiScreenMixin",
     "minecraft.client.InventoryEffectRendererMixin",
-    "minecraft.client.RenderBlockMixin",
     "minecraft.client.ResourceLocationMixin",
     "minecraft.client.SlotCraftingMixin",
     "minecraft.packet.NetClientHandlerMixin"

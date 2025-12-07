@@ -9,7 +9,6 @@ import dev.emi.emi.recipe.EmiShapedRecipe;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
@@ -28,12 +27,12 @@ public class EmiShapedOreRecipe extends EmiCraftingRecipe {
         int i = 0;
         for (int y = 0; y < 3; y++) {
             for (int x = 0; x < 3; x++) {
-                int width = getWidth(recipe);
-                int height = recipe.getRecipeSize() / width;
-                if (x >= width || y >= height || i >= recipe.getInput().length) {
+                int width = recipe.getRecipeWidth();
+                int height = recipe.getRecipeHeight();
+                if (x >= width || y >= height || i >= recipe.getIngredients().size()) {
                     list.add(EmiStack.EMPTY);
                 } else {
-                    list.add(fromOreInput(recipe.getInput()[i++]));
+                    list.add(fromOreInput(recipe.getIngredients().get(i++)));
                 }
             }
         }
@@ -55,16 +54,6 @@ public class EmiShapedOreRecipe extends EmiCraftingRecipe {
             return EmiStack.EMPTY;
         }
         throw new IllegalArgumentException("Unknown Oredict input type: " + input);
-    }
-
-    public static int getWidth(ShapedOreRecipe recipe) {
-        try {
-            Field field = ShapedOreRecipe.class.getDeclaredField("width");
-            field.setAccessible(true);
-            return (int) field.get(recipe);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Error getting width of oredict recipe", e);
-        }
     }
 
     //Forge uses a broken custom list for oredict
