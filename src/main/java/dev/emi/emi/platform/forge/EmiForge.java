@@ -29,7 +29,7 @@ import net.minecraftforge.common.MinecraftForge;
 	name = "EMI",
 	guiFactory = "dev.emi.emi.platform.forge.EmiGuiFactory",
 	dependencies =
-		"required-after:mixinbooter@[4.2,);" +
+		"required-after:mixinbooter@[8.0,);" +
 		"after:jei;"
 )
 public class EmiForge {
